@@ -20,10 +20,8 @@ public class CameraController2D : MonoBehaviour
     [SerializeField] private Vector2 worldMax = new Vector2(50, 50);
 
     [Header("Mouse Drag (RMB)")]
-    [SerializeField] private bool enableRmbDrag = true;
     [SerializeField] private float dragSpeed = 1.0f; // 1 = naturalnie
     [SerializeField] private bool invertDrag = false;
-    [SerializeField] private bool ignoreDragWhenOverUI = true;
 
     private Camera cam;
 
