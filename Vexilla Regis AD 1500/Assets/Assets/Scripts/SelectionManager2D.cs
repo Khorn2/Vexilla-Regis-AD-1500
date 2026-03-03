@@ -20,25 +20,16 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleLeftClick()
     {
-    if (cam == null) cam = Camera.main;
-
     Ray ray = cam.ScreenPointToRay(Input.mousePosition);
     var hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity);
 
-    Debug.Log($"hits={hits.Length}");
+    GameUnit unit = null;
     for (int i = 0; i < hits.Length; i++)
     {
-        Debug.Log($"  hit[{i}] name={hits[i].collider.name} layer={LayerMask.LayerToName(hits[i].collider.gameObject.layer)}");
+        unit = hits[i].collider.GetComponentInParent<GameUnit>();
+        if (unit != null) break;
     }
 
-    // tymczasowo: wybierz pierwszy trafiony collider jako “unit”
-    if (hits.Length == 0)
-    {
-        ClearSelection();
-        return;
-    }
-
-    var unit = hits[0].collider.GetComponentInParent<GameUnit>();
     if (unit == null)
     {
         ClearSelection();
