@@ -29,6 +29,8 @@ public class CameraController2D : MonoBehaviour
     private Vector3 dragStartWorld;
     private Vector3 camStartPos;
 
+    public bool DragEnabled { get; set; } = true;
+
     private void Awake()
     {
         cam = GetComponent<Camera>();
@@ -72,31 +74,43 @@ public class CameraController2D : MonoBehaviour
 
     private void HandleRmbDrag()
     {
-    // Start drag
-    if (Input.GetMouseButtonDown(1))
-    {
-    isDragging = true;
-    dragStartWorld = cam.ScreenToWorldPoint(Input.mousePosition);
-    return;
-    }
+        if (!DragEnabled)
+        {
+            isDragging = false;
+            return;
+        }
 
-    if (Input.GetMouseButtonUp(1))
-    {
-    isDragging = false;
-    return;
-    }
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            if (Input.GetMouseButtonDown(1)) return;
+        }
 
-    if (!isDragging) return;
+        // Start drag
+        if (Input.GetMouseButtonDown(1))
+        {
+            isDragging = true;
+            dragStartWorld = cam.ScreenToWorldPoint(Input.mousePosition);
+            return;
+        }
 
-    Vector3 currentWorld = cam.ScreenToWorldPoint(Input.mousePosition);
-    Vector3 delta = dragStartWorld - currentWorld;
+        // End drag
+        if (Input.GetMouseButtonUp(1))
+        {
+            isDragging = false;
+            return;
+        }
 
-    if (invertDrag) delta = -delta;
+        if (!isDragging) return;
 
-    transform.position += delta * dragSpeed;
+        Vector3 currentWorld = cam.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 delta = dragStartWorld - currentWorld;
 
-    // KLUCZ: przesuwamy punkt referencyjny po ruchu kamery
-    dragStartWorld = cam.ScreenToWorldPoint(Input.mousePosition);
+        if (invertDrag) delta = -delta;
+
+        transform.position += delta * dragSpeed;
+
+        // przesuwamy punkt referencyjny po ruchu kamery
+        dragStartWorld = cam.ScreenToWorldPoint(Input.mousePosition);
     }
 
     private float GetMaxOrthoSizeThatFitsBounds()

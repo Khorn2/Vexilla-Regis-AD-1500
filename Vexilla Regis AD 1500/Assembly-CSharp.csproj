@@ -69,6 +69,8 @@
     <Compile Include="Assets\Assets\Scripts\CameraController2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />
+    <Compile Include="Assets\Assets\Scripts\UnitStats.cs" />
+    <Compile Include="Assets\Assets\Scripts\DeploymentManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

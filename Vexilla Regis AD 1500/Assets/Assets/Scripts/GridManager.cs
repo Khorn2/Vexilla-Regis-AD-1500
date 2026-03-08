@@ -12,6 +12,18 @@ public class GridManager : MonoBehaviour
 
     private Dictionary<Vector2Int, Tile> _tiles;
 
+        public int Width => width;
+    public int Height => height;
+
+    public bool IsInside(Vector2Int p)
+        => p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
+
+    public Vector2Int WorldToGrid(Vector3 world)
+        => new Vector2Int(Mathf.RoundToInt(world.x), Mathf.RoundToInt(world.y));
+
+    public Vector3 GridToWorld(Vector2Int grid)
+        => new Vector3(grid.x, grid.y, 0f);
+
     private void Start()
     {
         GenerateGrid();
