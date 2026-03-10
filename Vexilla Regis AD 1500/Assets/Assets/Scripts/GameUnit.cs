@@ -8,10 +8,14 @@ public class GameUnit : MonoBehaviour
     [Header("Movement")]
     [SerializeField, Min(0.1f)] private float moveSpeedTilesPerSec = 4f; // fallback
     [SerializeField] private UnitStats stats;
+    [SerializeField] private OrderType currentOrder = OrderType.March;
 
     public bool IsSelected { get; private set; }
     public Vector2Int GridPosition { get; private set; }
     public bool IsMoving => _moveRoutine != null;
+
+    public OrderType CurrentOrder => currentOrder;
+
 
     private Coroutine _moveRoutine;
 
@@ -84,5 +88,15 @@ public class GameUnit : MonoBehaviour
         transform.position = end;
         GridPosition = targetGrid;
         _moveRoutine = null;
+    }
+
+    public void SetOrder(OrderType order)
+    {
+        if (order == OrderType.Shoot && !stats.canShoot)
+        return;
+
+        if (order == OrderType.Charge && !stats.canCharge)
+        return;
+    currentOrder = order;
     }
 }

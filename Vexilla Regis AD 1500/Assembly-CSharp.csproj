@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="Assets\Assets\Scripts\SelectionManager2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GridManager.cs" />
+    <Compile Include="Assets\Assets\Scripts\OrderType.cs" />
     <Compile Include="Assets\Assets\Scripts\CameraController2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />

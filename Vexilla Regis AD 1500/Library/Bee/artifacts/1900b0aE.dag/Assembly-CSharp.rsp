@@ -388,6 +388,7 @@
 "Assets/Assets/Scripts/DeploymentManager.cs"
 "Assets/Assets/Scripts/GameUnit.cs"
 "Assets/Assets/Scripts/GridManager.cs"
+"Assets/Assets/Scripts/OrderType.cs"
 "Assets/Assets/Scripts/SelectionManager2D.cs"
 "Assets/Assets/Scripts/Tile.cs"
 "Assets/Assets/Scripts/UnitStats.cs"

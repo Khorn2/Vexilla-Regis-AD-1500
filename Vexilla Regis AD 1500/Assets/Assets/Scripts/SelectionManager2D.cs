@@ -27,6 +27,8 @@ public class SelectionManager2D : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
             HandleRightClick_Move();
+
+            HandleOrderInput();
     }
 
     private void HandleLeftClick_SelectUnit()
@@ -96,5 +98,19 @@ public class SelectionManager2D : MonoBehaviour
         selected = null;
         if (cameraController != null)
         cameraController.DragEnabled = true;
+    }
+
+    private void HandleOrderInput()
+    {
+    if (selected == null) return;
+
+    if (Input.GetKeyDown(KeyCode.Alpha1))
+        selected.SetOrder(OrderType.March);
+
+    if (Input.GetKeyDown(KeyCode.Alpha2))
+        selected.SetOrder(OrderType.Charge);
+
+    if (Input.GetKeyDown(KeyCode.Alpha3))
+        selected.SetOrder(OrderType.Shoot);
     }
 }
