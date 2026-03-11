@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5540625619774950658}
   - component: {fileID: 8391634262849394835}
-  - component: {fileID: 9063569334522320188}
   m_Layer: 6
   m_Name: selectionRing
   m_TagString: Untagged
@@ -85,19 +84,3 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &9063569334522320188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6546379791242667493}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3bbe17a0daa49c54d9c2ca15585f2636, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectionRing: {fileID: 0}
-  moveSpeedTilesPerSec: 4
-  stats: {fileID: 0}
-  currentOrder: 0

@@ -13,3 +13,9 @@ MonoBehaviour:
   m_Name: TestInfantry
   m_EditorClassIdentifier: 
   moveSpeedTilesPerSec: 4
+  unitSize: 100
+  meleeDamage: 10
+  rangedDamage: 8
+  shootRange: 4
+  canCharge: 1
+  canShoot: 0
