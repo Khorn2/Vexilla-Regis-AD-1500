@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameUnit : MonoBehaviour
 {
+    public static readonly List<GameUnit> AllUnits = new List<GameUnit>();
+
     [Header("Visuals")]
     [SerializeField] private GameObject selectionRing;
 
@@ -20,10 +23,25 @@ public class GameUnit : MonoBehaviour
     public OrderType CurrentOrder => currentOrder;
     public int TeamId => teamId;
     public int CurrentSize => currentSize;
+    public UnitStats Stats => stats;
+    public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
+
+    private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>();
 
     private Coroutine _moveRoutine;
     private int currentSize;
     private GridManager grid;
+
+    private void OnEnable()
+    {
+        if (!AllUnits.Contains(this))
+            AllUnits.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        AllUnits.Remove(this);
+    }
 
     private void Awake()
     {
@@ -31,7 +49,7 @@ public class GameUnit : MonoBehaviour
 
         if (stats == null)
         {
-            Debug.LogError($"{name}: brak przypiętego UnitStats.", this);
+            Debug.LogError($"{name}: brak przypiętego UnitStats. Sprawdź ROOT jednostki, nie selectionRing.", this);
             enabled = false;
             return;
         }
@@ -70,14 +88,27 @@ public class GameUnit : MonoBehaviour
         if (order == OrderType.Charge && !stats.canCharge)
             return;
 
+        if (currentOrder == order)
+            return;
+
         currentOrder = order;
+        Debug.Log($"{name} -> Order changed to: {currentOrder}");
+    }
+
+    public int GetMovementRange()
+    {
+        int range = stats.movementRange;
+
+        if (currentOrder == OrderType.Charge)
+            range = Mathf.RoundToInt(range * 1.5f);
+
+        return range;
     }
 
     public void SnapToGrid(Vector2Int gridPos)
     {
         if (grid == null) return;
 
-        // jeśli jednostka już stoi gdzieś indziej, zwolnij stare pole
         if (GridPosition != gridPos)
             grid.UnregisterUnit(this, GridPosition);
 
@@ -88,7 +119,7 @@ public class GameUnit : MonoBehaviour
         transform.position = new Vector3(gridPos.x, gridPos.y, 0f);
     }
 
-    public void MoveToGrid(Vector2Int targetGrid, Action onComplete = null)
+    public void MoveToGrid(Vector2Int desiredTargetGrid, Action onComplete = null)
     {
         if (currentOrder == OrderType.Shoot)
             return;
@@ -96,7 +127,12 @@ public class GameUnit : MonoBehaviour
         if (grid == null)
             return;
 
-        if (!grid.MoveUnit(this, GridPosition, targetGrid))
+        Vector2Int resolvedTarget = grid.ResolveMoveDestination(this, GridPosition, desiredTargetGrid);
+
+        if (resolvedTarget == GridPosition)
+            return;
+
+        if (!grid.MoveUnit(this, GridPosition, resolvedTarget))
             return;
 
         if (_moveRoutine != null)
@@ -105,7 +141,7 @@ public class GameUnit : MonoBehaviour
             _moveRoutine = null;
         }
 
-        _moveRoutine = StartCoroutine(MoveRoutine(targetGrid, onComplete));
+        _moveRoutine = StartCoroutine(MoveRoutine(resolvedTarget, onComplete));
     }
 
     private IEnumerator MoveRoutine(Vector2Int targetGrid, Action onComplete)
@@ -169,6 +205,22 @@ public class GameUnit : MonoBehaviour
         return dist <= 1.5f;
     }
 
+    public bool HasAdjacentEnemy()
+    {
+        if (grid == null) return false;
+
+        Vector2Int[] neighbours = grid.GetNeighbours4(GridPosition);
+
+        for (int i = 0; i < neighbours.Length; i++)
+        {
+            GameUnit other = grid.GetUnitAt(neighbours[i]);
+            if (other != null && other.TeamId != TeamId)
+                return true;
+        }
+
+        return false;
+    }
+
     public void AttackMelee(GameUnit target)
     {
         if (target == null) return;
@@ -187,6 +239,13 @@ public class GameUnit : MonoBehaviour
         if (target.TeamId == TeamId) return;
         if (!stats.canShoot) return;
         if (currentOrder != OrderType.Shoot) return;
+
+        // brak strzału gdy wróg stoi obok
+        if (HasAdjacentEnemy())
+        {
+            Debug.Log($"{name} cannot shoot: enemy is adjacent.");
+            return;
+        }
 
         float dist = Vector2Int.Distance(GridPosition, target.GridPosition);
         if (dist > stats.shootRange) return;
@@ -209,5 +268,104 @@ public class GameUnit : MonoBehaviour
             grid.UnregisterUnit(this, GridPosition);
 
         Destroy(gameObject);
+    }
+
+    // =========================
+    // KOLEJKA ROZKAZÓW
+    // =========================
+
+    public void ClearPlannedAction()
+    {
+        plannedCommands.Clear();
+    }
+
+    public void QueueMove(Vector2Int target, bool append)
+    {
+        if (!append)
+            plannedCommands.Clear();
+
+        plannedCommands.Add(new PlannedCommand(PlannedCommandType.Move, target));
+        Debug.Log($"{name} queued MOVE to {target}");
+    }
+
+    public void QueueAttack(GameUnit target, bool append)
+    {
+        if (target == null) return;
+
+        if (!append)
+            plannedCommands.Clear();
+
+        PlannedCommandType type =
+            currentOrder == OrderType.Shoot
+            ? PlannedCommandType.AttackShoot
+            : PlannedCommandType.AttackMelee;
+
+        plannedCommands.Add(new PlannedCommand(type, target));
+        Debug.Log($"{name} queued {type} on {target.name}");
+    }
+
+    public IEnumerator ExecutePlannedAction()
+    {
+        if (plannedCommands.Count == 0)
+            yield break;
+
+        for (int i = 0; i < plannedCommands.Count; i++)
+        {
+            PlannedCommand cmd = plannedCommands[i];
+            if (cmd == null) continue;
+
+            switch (cmd.commandType)
+            {
+                case PlannedCommandType.Move:
+                {
+                    bool finished = false;
+
+                    MoveToGrid(cmd.targetGridPosition, () => finished = true);
+
+                    while (!finished)
+                        yield return null;
+
+                    break;
+                }
+
+                case PlannedCommandType.AttackShoot:
+                {
+                    if (cmd.targetUnit != null)
+                        Shoot(cmd.targetUnit);
+
+                    yield return new WaitForSeconds(0.15f);
+                    break;
+                }
+
+                case PlannedCommandType.AttackMelee:
+                {
+                    if (cmd.targetUnit != null)
+                    {
+                        if (IsAdjacentTo(cmd.targetUnit))
+                        {
+                            AttackMelee(cmd.targetUnit);
+                        }
+                        else if (grid != null && grid.TryGetFreeAdjacentTile(cmd.targetUnit.GridPosition, GridPosition, out Vector2Int attackTile))
+                        {
+                            bool finished = false;
+
+                            MoveToGrid(attackTile, () =>
+                            {
+                                if (this != null && cmd.targetUnit != null)
+                                    AttackMelee(cmd.targetUnit);
+
+                                finished = true;
+                            });
+
+                            while (!finished)
+                                yield return null;
+                        }
+                    }
+
+                    yield return new WaitForSeconds(0.15f);
+                    break;
+                }
+            }
+        }
     }
 }

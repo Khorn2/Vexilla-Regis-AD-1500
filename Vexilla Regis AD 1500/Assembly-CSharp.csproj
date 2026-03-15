@@ -66,10 +66,13 @@
   <ItemGroup>
     <Compile Include="Assets\Assets\Scripts\SelectionManager2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GridManager.cs" />
+    <Compile Include="Assets\Assets\Scripts\PlannedCommand.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderType.cs" />
+    <Compile Include="Assets\Assets\Scripts\TurnManager.cs" />
     <Compile Include="Assets\Assets\Scripts\CameraController2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />
+    <Compile Include="Assets\Assets\Scripts\CommandPreviewRenderer.cs" />
     <Compile Include="Assets\Assets\Scripts\UnitStats.cs" />
     <Compile Include="Assets\Assets\Scripts\DeploymentManager.cs" />
   </ItemGroup>

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Tile : MonoBehaviour
@@ -8,18 +6,31 @@ public class Tile : MonoBehaviour
     [SerializeField] private SpriteRenderer _renderer;
     [SerializeField] private GameObject _highlight;
 
+    private Color _originalColor;
+
     public void Init(bool isOffset)
     {
         _renderer.color = isOffset ? _offsetColor : _baseColor;
+        _originalColor = _renderer.color;
     }
 
     void OnMouseEnter()
     {
-        _highlight.SetActive(true);
+        if (_highlight != null)
+            _highlight.SetActive(true);
     }
 
     void OnMouseExit()
     {
-        _highlight.SetActive(false);
+        if (_highlight != null)
+            _highlight.SetActive(false);
+    }
+
+    public void SetRangeHighlight(bool active)
+    {
+        if (active)
+            _renderer.color = Color.Lerp(_originalColor, Color.yellow, 0.35f);
+        else
+            _renderer.color = _originalColor;
     }
 }

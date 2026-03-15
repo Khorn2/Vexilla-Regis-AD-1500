@@ -4,7 +4,8 @@ using UnityEngine;
 public class UnitStats : ScriptableObject
 {
     [Header("Movement")]
-    public float moveSpeedTilesPerSec = 4f;
+    [Min(1)] public int movementRange = 4;
+    [Min(0.1f)] public float moveSpeedTilesPerSec = 4f;
 
     [Header("Unit Size")]
     public int unitSize = 100; // liczebność, pełni funkcję hp

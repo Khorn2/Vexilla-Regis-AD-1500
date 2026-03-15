@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SelectionManager2D : MonoBehaviour
@@ -7,10 +8,28 @@ public class SelectionManager2D : MonoBehaviour
     [SerializeField] private GridManager grid;
     [SerializeField] private DeploymentManager deploymentManager;
     [SerializeField] private CameraController2D cameraController;
+    [SerializeField] private TurnManager turnManager;
 
-    public GameUnit Selected => selected;
+    [Header("Box Selection")]
+    [SerializeField] private float dragThreshold = 12f;
 
-    private GameUnit selected;
+    public GameUnit Selected => PrimarySelected;
+
+    private readonly List<GameUnit> selectedUnits = new List<GameUnit>();
+
+    private bool leftMouseDown;
+    private bool isBoxSelecting;
+    private Vector2 dragStartScreen;
+    private Vector2 dragCurrentScreen;
+
+    private GameUnit PrimarySelected
+    {
+        get
+        {
+            if (selectedUnits.Count == 0) return null;
+            return selectedUnits[selectedUnits.Count - 1];
+        }
+    }
 
     private void Awake()
     {
@@ -18,90 +37,121 @@ public class SelectionManager2D : MonoBehaviour
         if (grid == null) grid = FindObjectOfType<GridManager>();
         if (deploymentManager == null) deploymentManager = FindObjectOfType<DeploymentManager>();
         if (cameraController == null) cameraController = FindObjectOfType<CameraController2D>();
+        if (turnManager == null) turnManager = FindObjectOfType<TurnManager>();
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-            HandleLeftClick_SelectUnit();
-
-        if (Input.GetMouseButtonDown(1))
-            HandleRightClick_Action();
-
-        HandleOrderInput();
+    HandleLeftMouseSelection();
+    HandleRightClick_Action();
+    HandleOrderInput();
+    HandleClearPlannedInput();
+    UpdateRangeHighlight();
     }
 
-    private void HandleLeftClick_SelectUnit()
+    private void HandleLeftMouseSelection()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity, unitMask);
-
-        GameUnit unit = null;
-
-        for (int i = 0; i < hits.Length; i++)
+        if (Input.GetMouseButtonDown(0))
         {
-            unit = hits[i].collider.GetComponentInParent<GameUnit>();
-            if (unit != null && unit.TeamId == 0)
-                break;
+            leftMouseDown = true;
+            isBoxSelecting = false;
+            dragStartScreen = Input.mousePosition;
+            dragCurrentScreen = dragStartScreen;
         }
 
-        if (unit == null)
+        if (leftMouseDown && Input.GetMouseButton(0))
         {
-            ClearSelection();
+            dragCurrentScreen = Input.mousePosition;
+
+            if (Vector2.Distance(dragStartScreen, dragCurrentScreen) > dragThreshold)
+                isBoxSelecting = true;
+        }
+
+        if (leftMouseDown && Input.GetMouseButtonUp(0))
+        {
+            bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+            if (isBoxSelecting)
+                FinishBoxSelection(shift);
+            else
+                HandleSingleClickSelection(shift);
+
+            leftMouseDown = false;
+            isBoxSelecting = false;
+        }
+    }
+
+    private void HandleSingleClickSelection(bool additive)
+    {
+        GameUnit clickedUnit = GetPlayerUnitUnderMouse();
+
+        if (clickedUnit == null)
+        {
+            if (!additive)
+                ClearSelection();
+
             return;
         }
 
-        Select(unit);
+        if (!additive)
+            ClearSelection();
+
+        AddSelection(clickedUnit);
+    }
+
+    private void FinishBoxSelection(bool additive)
+    {
+        Rect rect = GetScreenRect(dragStartScreen, dragCurrentScreen);
+
+        if (!additive)
+            ClearSelection();
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+            if (unit == null) continue;
+            if (unit.TeamId != 0) continue;
+
+            Vector3 sp = cam.WorldToScreenPoint(unit.transform.position);
+            if (sp.z < 0f) continue;
+
+            if (rect.Contains(new Vector2(sp.x, sp.y), true))
+                AddSelection(unit);
+        }
+    }
+
+    private void AddSelection(GameUnit unit)
+    {
+        if (unit == null) return;
+        if (selectedUnits.Contains(unit)) return;
+
+        selectedUnits.Add(unit);
+        unit.SetSelected(true);
+
+        if (cameraController != null)
+            cameraController.DragEnabled = false;
     }
 
     private void HandleRightClick_Action()
     {
+        if (!Input.GetMouseButtonDown(1)) return;
+        if (turnManager != null && !turnManager.IsPlanningPhase) return;
+
+        GameUnit selected = PrimarySelected;
         if (selected == null || grid == null) return;
+
+        bool append = IsAppendQueueHeld();
 
         GameUnit clickedEnemy = GetEnemyUnderMouse();
 
         if (clickedEnemy != null)
         {
-            HandleEnemyClick(clickedEnemy);
+            selected.QueueAttack(clickedEnemy, append);
             return;
         }
-
-        HandleGroundClick();
-    }
-
-    private void HandleEnemyClick(GameUnit enemy)
-    {
-        if (selected == null || enemy == null) return;
 
         if (selected.CurrentOrder == OrderType.Shoot)
-        {
-            selected.Shoot(enemy);
             return;
-        }
-
-        // March / Charge
-        if (selected.IsAdjacentTo(enemy))
-        {
-            selected.AttackMelee(enemy);
-            return;
-        }
-
-        if (grid.TryGetFreeAdjacentTile(enemy.GridPosition, selected.GridPosition, out Vector2Int attackTile))
-        {
-            selected.MoveToGrid(attackTile, () =>
-            {
-                if (selected != null && enemy != null)
-                    selected.AttackMelee(enemy);
-            });
-        }
-    }
-
-    private void HandleGroundClick()
-    {
-        if (selected == null || grid == null) return;
-
-        if (selected.CurrentOrder == OrderType.Shoot)
-            return; // Shoot blokuje ruch
 
         Vector3 mp = Input.mousePosition;
         mp.z = -cam.transform.position.z;
@@ -110,7 +160,7 @@ public class SelectionManager2D : MonoBehaviour
         Vector2Int target = grid.WorldToGrid(world);
         if (!grid.IsInside(target)) return;
 
-        // deployment = teleport
+        // deployment działa natychmiastowo
         if (deploymentManager != null && deploymentManager.DeploymentActive)
         {
             if (!deploymentManager.IsInsideDeploymentZone(target)) return;
@@ -120,13 +170,15 @@ public class SelectionManager2D : MonoBehaviour
             return;
         }
 
-        // normalny ruch
-        if (grid.IsOccupied(target)) return;
-
-        selected.MoveToGrid(target);
+        selected.QueueMove(target, append);
     }
 
-    private GameUnit GetEnemyUnderMouse()
+    private bool IsAppendQueueHeld()
+    {
+        return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+    }
+
+    private GameUnit GetPlayerUnitUnderMouse()
     {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity, unitMask);
@@ -134,8 +186,26 @@ public class SelectionManager2D : MonoBehaviour
         for (int i = 0; i < hits.Length; i++)
         {
             GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
+            if (unit != null && unit.TeamId == 0)
+                return unit;
+        }
 
-            if (unit != null && selected != null && unit.TeamId != selected.TeamId)
+        return null;
+    }
+
+    private GameUnit GetEnemyUnderMouse()
+    {
+        GameUnit actor = PrimarySelected;
+        if (actor == null) return null;
+
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity, unitMask);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
+
+            if (unit != null && unit.TeamId != actor.TeamId)
                 return unit;
         }
 
@@ -144,39 +214,121 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleOrderInput()
     {
-        if (selected == null) return;
+        if (selectedUnits.Count == 0) return;
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
-            selected.SetOrder(OrderType.March);
+            SetOrderForSelection(OrderType.March);
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
-            selected.SetOrder(OrderType.Charge);
+            SetOrderForSelection(OrderType.Charge);
 
         if (Input.GetKeyDown(KeyCode.Alpha3))
-            selected.SetOrder(OrderType.Shoot);
+            SetOrderForSelection(OrderType.Shoot);
     }
 
-    private void Select(GameUnit unit)
+    private void SetOrderForSelection(OrderType order)
     {
-        if (selected == unit) return;
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit != null)
+                unit.SetOrder(order);
+        }
 
-        ClearSelection();
-        selected = unit;
-        selected.SetSelected(true);
+        Debug.Log($"Selection -> applied order: {order} to {selectedUnits.Count} unit(s)");
+    }
 
-        if (cameraController != null)
-            cameraController.DragEnabled = false;
+    private void UpdateRangeHighlight()
+    {
+        if (grid == null)
+            return;
+
+        GameUnit unit = PrimarySelected;
+
+        if (unit == null)
+        {
+            grid.ClearHighlights();
+            return;
+        }
+
+        if (unit.CurrentOrder == OrderType.Shoot && unit.Stats != null && unit.Stats.canShoot)
+        {
+            grid.HighlightShootRange(unit.GridPosition, unit.Stats.shootRange);
+        }
+        else
+        {
+            grid.ClearHighlights();
+        }
     }
 
     private void ClearSelection()
     {
-        if (selected != null)
+        for (int i = 0; i < selectedUnits.Count; i++)
         {
-            selected.SetSelected(false);
-            selected = null;
+            if (selectedUnits[i] != null)
+                selectedUnits[i].SetSelected(false);
         }
+
+        selectedUnits.Clear();
 
         if (cameraController != null)
             cameraController.DragEnabled = true;
+
+        if (grid != null)
+            grid.ClearHighlights();
+    }
+
+    private Rect GetScreenRect(Vector2 p1, Vector2 p2)
+    {
+        Vector2 min = Vector2.Min(p1, p2);
+        Vector2 max = Vector2.Max(p1, p2);
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+    }
+
+    private void OnGUI()
+    {
+        if (!isBoxSelecting) return;
+
+        Rect rect = GetScreenRect(dragStartScreen, dragCurrentScreen);
+
+        Rect guiRect = new Rect(
+            rect.xMin,
+            Screen.height - rect.yMax,
+            rect.width,
+            rect.height
+        );
+
+        GUI.color = new Color(0.2f, 0.8f, 1f, 0.15f);
+        GUI.DrawTexture(guiRect, Texture2D.whiteTexture);
+
+        GUI.color = new Color(0.2f, 0.8f, 1f, 0.9f);
+        DrawGuiRectBorder(guiRect, 2f);
+
+        GUI.color = Color.white;
+    }
+
+    private void DrawGuiRectBorder(Rect rect, float thickness)
+    {
+        GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, rect.width, thickness), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, thickness, rect.height), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), Texture2D.whiteTexture);
+    }
+
+    private void HandleClearPlannedInput()
+    {
+    if (selectedUnits.Count == 0) return;
+
+    if (Input.GetKeyDown(KeyCode.Delete))
+    {
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit != null)
+                unit.ClearPlannedAction();
+        }
+
+        Debug.Log($"Cleared planned commands for {selectedUnits.Count} unit(s)");
+    }
     }
 }

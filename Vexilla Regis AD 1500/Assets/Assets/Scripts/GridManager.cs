@@ -144,6 +144,55 @@ public class GridManager : MonoBehaviour
         };
     }
 
+    // QoL #4: sojuszników można "przejść", wrogowie blokują ruch
+    public Vector2Int ResolveMoveDestination(GameUnit mover, Vector2Int from, Vector2Int desired)
+    {
+    if (mover == null) return from;
+    if (!IsInside(desired)) return from;
+
+    int maxRange = mover.GetMovementRange();
+
+    List<Vector2Int> line = GetLine(from, desired);
+
+    Vector2Int lastValid = from;
+    int travelled = 0;
+
+    for (int i = 1; i < line.Count; i++)
+    {
+        Vector2Int p = line[i];
+
+        if (!IsInside(p))
+            break;
+
+        travelled++;
+
+        if (travelled > maxRange)
+            break;
+
+        GameUnit unitAt = GetUnitAt(p);
+
+        if (unitAt == null)
+        {
+            lastValid = p;
+            continue;
+        }
+
+        if (unitAt == mover)
+        {
+            lastValid = p;
+            continue;
+        }
+
+        if (unitAt.TeamId == mover.TeamId)
+            continue;
+
+        // enemy blocks
+        break;
+    }
+
+    return lastValid;
+    }
+
     public bool TryGetFreeAdjacentTile(Vector2Int targetPos, Vector2Int attackerPos, out Vector2Int result)
     {
         result = targetPos;
@@ -170,5 +219,112 @@ public class GridManager : MonoBehaviour
         }
 
         return found;
+    }
+
+    private List<Vector2Int> GetLine(Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> result = new List<Vector2Int>();
+
+        int x0 = start.x;
+        int y0 = start.y;
+        int x1 = end.x;
+        int y1 = end.y;
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dy = Mathf.Abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true)
+        {
+            result.Add(new Vector2Int(x0, y0));
+
+            if (x0 == x1 && y0 == y1)
+                break;
+
+            int e2 = 2 * err;
+
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+
+        return result;
+    }
+
+    private List<Tile> highlightedTiles = new List<Tile>();
+
+    public void ClearHighlights()
+    {
+    for (int i = 0; i < highlightedTiles.Count; i++)
+        highlightedTiles[i].SetRangeHighlight(false);
+
+    highlightedTiles.Clear();
+    }
+    public void HighlightMovementRange(Vector2Int center, int range)
+    {
+    ClearHighlights();
+
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            Vector2Int p = new Vector2Int(center.x + x, center.y + y);
+
+            if (!IsInside(p))
+                continue;
+
+            float dist = Mathf.Abs(x) + Mathf.Abs(y);
+
+            if (dist > range)
+                continue;
+
+            Tile tile = GetTileAtPosition(p);
+
+            if (tile != null)
+            {
+                tile.SetRangeHighlight(true);
+                highlightedTiles.Add(tile);
+            }
+        }
+    }
+    }
+
+    public void HighlightShootRange(Vector2Int center, int range)
+    {
+    ClearHighlights();
+
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            Vector2Int p = new Vector2Int(center.x + x, center.y + y);
+
+            if (!IsInside(p))
+                continue;
+
+            float dist = Vector2Int.Distance(center, p);
+
+            if (dist > range)
+                continue;
+
+            Tile tile = GetTileAtPosition(p);
+
+            if (tile != null)
+            {
+                tile.SetRangeHighlight(true);
+                highlightedTiles.Add(tile);
+            }
+        }
+    }
     }
 }
