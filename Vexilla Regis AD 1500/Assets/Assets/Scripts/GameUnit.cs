@@ -17,6 +17,11 @@ public class GameUnit : MonoBehaviour
     [Header("Team")]
     [SerializeField] private int teamId = 0; // 0 = player, 1 = enemy
 
+    [Header("Ranged Through Ally")]
+    [SerializeField] private bool allowShotThroughOneAlly = false;
+    [SerializeField, Range(0f, 1f)] private float targetDamageMultiplierThroughAlly = 0.85f;
+    [SerializeField, Range(0f, 1f)] private float allyDamageMultiplier = 0.25f;
+
     public bool IsSelected { get; private set; }
     public Vector2Int GridPosition { get; private set; }
     public bool IsMoving => _moveRoutine != null;
@@ -25,6 +30,9 @@ public class GameUnit : MonoBehaviour
     public int CurrentSize => currentSize;
     public UnitStats Stats => stats;
     public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
+
+    // Tylko jednostki gracza mają pokazywać preview rozkazów
+    public bool ShowCommandPreview => teamId == 0;
 
     private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>();
 
@@ -102,7 +110,28 @@ public class GameUnit : MonoBehaviour
         if (currentOrder == OrderType.Charge)
             range = Mathf.RoundToInt(range * 1.5f);
 
-        return range;
+        return Mathf.Max(0, range);
+    }
+
+    public float GetCurrentMoveSpeed()
+    {
+        float speed = Mathf.Max(0.1f, stats.moveSpeedTilesPerSec);
+
+        if (currentOrder == OrderType.Charge)
+            speed *= 1.5f;
+
+        return speed;
+    }
+
+    public float GetMeleeModifier()
+    {
+        switch (currentOrder)
+        {
+            case OrderType.Charge:
+                return 1.5f;
+            default:
+                return 1f;
+        }
     }
 
     public void SnapToGrid(Vector2Int gridPos)
@@ -122,18 +151,30 @@ public class GameUnit : MonoBehaviour
     public void MoveToGrid(Vector2Int desiredTargetGrid, Action onComplete = null)
     {
         if (currentOrder == OrderType.Shoot)
+        {
+            onComplete?.Invoke();
             return;
+        }
 
         if (grid == null)
+        {
+            onComplete?.Invoke();
             return;
+        }
 
         Vector2Int resolvedTarget = grid.ResolveMoveDestination(this, GridPosition, desiredTargetGrid);
 
         if (resolvedTarget == GridPosition)
+        {
+            onComplete?.Invoke();
             return;
+        }
 
         if (!grid.MoveUnit(this, GridPosition, resolvedTarget))
+        {
+            onComplete?.Invoke();
             return;
+        }
 
         if (_moveRoutine != null)
         {
@@ -174,27 +215,6 @@ public class GameUnit : MonoBehaviour
         _moveRoutine = null;
 
         onComplete?.Invoke();
-    }
-
-    public float GetCurrentMoveSpeed()
-    {
-        float speed = Mathf.Max(0.1f, stats.moveSpeedTilesPerSec);
-
-        if (currentOrder == OrderType.Charge)
-            speed *= 1.5f;
-
-        return speed;
-    }
-
-    public float GetMeleeModifier()
-    {
-        switch (currentOrder)
-        {
-            case OrderType.Charge:
-                return 1.5f;
-            default:
-                return 1f;
-        }
     }
 
     public bool IsAdjacentTo(GameUnit target)
@@ -240,7 +260,6 @@ public class GameUnit : MonoBehaviour
         if (!stats.canShoot) return;
         if (currentOrder != OrderType.Shoot) return;
 
-        // brak strzału gdy wróg stoi obok
         if (HasAdjacentEnemy())
         {
             Debug.Log($"{name} cannot shoot: enemy is adjacent.");
@@ -249,6 +268,48 @@ public class GameUnit : MonoBehaviour
 
         float dist = Vector2Int.Distance(GridPosition, target.GridPosition);
         if (dist > stats.shootRange) return;
+
+        List<Vector2Int> line = GetLinePoints(GridPosition, target.GridPosition);
+
+        int alliesOnLine = 0;
+        GameUnit allyHit = null;
+
+        for (int i = 1; i < line.Count - 1; i++)
+        {
+            GameUnit unitOnLine = grid != null ? grid.GetUnitAt(line[i]) : null;
+            if (unitOnLine == null) continue;
+
+            if (unitOnLine.TeamId == TeamId)
+            {
+                alliesOnLine++;
+                if (allyHit == null)
+                    allyHit = unitOnLine;
+            }
+        }
+
+        if (alliesOnLine >= 2)
+        {
+            Debug.Log($"{name} cannot shoot: two allies block the shot.");
+            return;
+        }
+
+        if (alliesOnLine == 1)
+        {
+            if (!allowShotThroughOneAlly)
+            {
+                Debug.Log($"{name} cannot shoot: ally blocks the shot.");
+                return;
+            }
+
+            int targetDmg = Mathf.RoundToInt(stats.rangedDamage * targetDamageMultiplierThroughAlly);
+            int allyDmg = Mathf.RoundToInt(stats.rangedDamage * allyDamageMultiplier);
+
+            if (allyHit != null)
+                allyHit.TakeDamage(allyDmg);
+
+            target.TakeDamage(targetDmg);
+            return;
+        }
 
         target.TakeDamage(stats.rangedDamage);
     }
@@ -269,10 +330,6 @@ public class GameUnit : MonoBehaviour
 
         Destroy(gameObject);
     }
-
-    // =========================
-    // KOLEJKA ROZKAZÓW
-    // =========================
 
     public void ClearPlannedAction()
     {
@@ -309,63 +366,171 @@ public class GameUnit : MonoBehaviour
         if (plannedCommands.Count == 0)
             yield break;
 
-        for (int i = 0; i < plannedCommands.Count; i++)
+        int remainingMovement = GetMovementRange();
+        int safety = 0;
+
+        while (plannedCommands.Count > 0 && safety < 32)
         {
-            PlannedCommand cmd = plannedCommands[i];
-            if (cmd == null) continue;
+            safety++;
+
+            PlannedCommand cmd = plannedCommands[0];
+            if (cmd == null)
+            {
+                plannedCommands.RemoveAt(0);
+                continue;
+            }
 
             switch (cmd.commandType)
             {
                 case PlannedCommandType.Move:
                 {
-                    bool finished = false;
+                    if (GridPosition == cmd.targetGridPosition)
+                    {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
 
-                    MoveToGrid(cmd.targetGridPosition, () => finished = true);
+                    if (remainingMovement <= 0)
+                        yield break;
+
+                    Vector2Int startPos = GridPosition;
+                    Vector2Int stepTarget = GetPointAlongLine(startPos, cmd.targetGridPosition, remainingMovement);
+
+                    bool finished = false;
+                    MoveToGrid(stepTarget, () => finished = true);
 
                     while (!finished)
                         yield return null;
 
-                    break;
+                    int moved = CountLineSteps(startPos, GridPosition);
+                    remainingMovement -= moved;
+
+                    if (GridPosition == cmd.targetGridPosition)
+                    {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
+
+                    yield break;
                 }
 
                 case PlannedCommandType.AttackShoot:
                 {
-                    if (cmd.targetUnit != null)
-                        Shoot(cmd.targetUnit);
+                    if (cmd.targetUnit == null)
+                    {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
 
-                    yield return new WaitForSeconds(0.15f);
-                    break;
+                    Shoot(cmd.targetUnit);
+                    yield break;
                 }
 
                 case PlannedCommandType.AttackMelee:
                 {
-                    if (cmd.targetUnit != null)
+                    if (cmd.targetUnit == null)
                     {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
+
+                    if (IsAdjacentTo(cmd.targetUnit))
+                    {
+                        AttackMelee(cmd.targetUnit);
+                        yield break;
+                    }
+
+                    if (remainingMovement <= 0)
+                        yield break;
+
+                    if (grid != null && grid.TryGetFreeAdjacentTile(cmd.targetUnit.GridPosition, GridPosition, out Vector2Int attackTile))
+                    {
+                        Vector2Int startPos = GridPosition;
+                        Vector2Int stepTarget = GetPointAlongLine(startPos, attackTile, remainingMovement);
+
+                        bool finished = false;
+                        MoveToGrid(stepTarget, () => finished = true);
+
+                        while (!finished)
+                            yield return null;
+
+                        int moved = CountLineSteps(startPos, GridPosition);
+                        remainingMovement -= moved;
+
                         if (IsAdjacentTo(cmd.targetUnit))
                         {
                             AttackMelee(cmd.targetUnit);
                         }
-                        else if (grid != null && grid.TryGetFreeAdjacentTile(cmd.targetUnit.GridPosition, GridPosition, out Vector2Int attackTile))
-                        {
-                            bool finished = false;
 
-                            MoveToGrid(attackTile, () =>
-                            {
-                                if (this != null && cmd.targetUnit != null)
-                                    AttackMelee(cmd.targetUnit);
-
-                                finished = true;
-                            });
-
-                            while (!finished)
-                                yield return null;
-                        }
+                        yield break;
                     }
 
-                    yield return new WaitForSeconds(0.15f);
-                    break;
+                    plannedCommands.RemoveAt(0);
+                    continue;
                 }
             }
         }
+    }
+
+    public void SetTeam(int newTeamId)
+    {
+        teamId = newTeamId;
+    }
+
+    private Vector2Int GetPointAlongLine(Vector2Int start, Vector2Int end, int maxSteps)
+    {
+        List<Vector2Int> line = GetLinePoints(start, end);
+
+        if (line.Count == 0)
+            return start;
+
+        int index = Mathf.Clamp(maxSteps, 0, line.Count - 1);
+        return line[index];
+    }
+
+    private int CountLineSteps(Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> line = GetLinePoints(start, end);
+        return Mathf.Max(0, line.Count - 1);
+    }
+
+    private List<Vector2Int> GetLinePoints(Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> result = new List<Vector2Int>();
+
+        int x0 = start.x;
+        int y0 = start.y;
+        int x1 = end.x;
+        int y1 = end.y;
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dy = Mathf.Abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true)
+        {
+            result.Add(new Vector2Int(x0, y0));
+
+            if (x0 == x1 && y0 == y1)
+                break;
+
+            int e2 = 2 * err;
+
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+
+        return result;
     }
 }

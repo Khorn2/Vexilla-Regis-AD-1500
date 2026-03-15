@@ -4,11 +4,18 @@ using UnityEngine;
 
 public class TurnManager : MonoBehaviour
 {
-    public int TurnNumber { get; private set; } = 0;
+    [SerializeField] private EnemyAIManager enemyAI;
 
+    public int TurnNumber { get; private set; } = 0;
     public bool IsPlanningPhase { get; private set; } = true;
 
     private bool executingTurn = false;
+
+    private void Awake()
+    {
+        if (enemyAI == null)
+            enemyAI = FindObjectOfType<EnemyAIManager>();
+    }
 
     private void Start()
     {
@@ -36,23 +43,41 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log($"=== EXECUTING TURN {TurnNumber} ===");
 
+        if (enemyAI != null)
+            enemyAI.PlanEnemyTurn();
+
         List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
+        List<Coroutine> running = new List<Coroutine>();
 
         for (int i = 0; i < units.Count; i++)
         {
             GameUnit unit = units[i];
+            if (unit == null) continue;
 
-            if (unit == null)
-                continue;
-
-            yield return unit.StartCoroutine(unit.ExecutePlannedAction());
+            Coroutine c = StartCoroutine(unit.ExecutePlannedAction());
+            running.Add(c);
         }
 
-        // wyczyść plany po wykonaniu
-        for (int i = 0; i < units.Count; i++)
+        // czekaj aż wszystkie skończą
+        bool anyMoving = true;
+
+        while (anyMoving)
         {
-            if (units[i] != null)
-                units[i].ClearPlannedAction();
+            anyMoving = false;
+
+            for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+            {
+                GameUnit unit = GameUnit.AllUnits[i];
+                if (unit == null) continue;
+
+                if (unit.IsMoving)
+                {
+                    anyMoving = true;
+                    break;
+                }
+            }
+
+            yield return null;
         }
 
         TurnNumber++;

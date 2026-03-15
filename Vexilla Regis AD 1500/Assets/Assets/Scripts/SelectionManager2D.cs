@@ -42,11 +42,11 @@ public class SelectionManager2D : MonoBehaviour
 
     private void Update()
     {
-    HandleLeftMouseSelection();
-    HandleRightClick_Action();
-    HandleOrderInput();
-    HandleClearPlannedInput();
-    UpdateRangeHighlight();
+        HandleLeftMouseSelection();
+        HandleRightClick_Action();
+        HandleOrderInput();
+        HandleClearPlannedInput();
+        UpdateRangeHighlight();
     }
 
     private void HandleLeftMouseSelection()
@@ -160,7 +160,7 @@ public class SelectionManager2D : MonoBehaviour
         Vector2Int target = grid.WorldToGrid(world);
         if (!grid.IsInside(target)) return;
 
-        // deployment działa natychmiastowo
+        // deployment
         if (deploymentManager != null && deploymentManager.DeploymentActive)
         {
             if (!deploymentManager.IsInsideDeploymentZone(target)) return;
@@ -170,7 +170,29 @@ public class SelectionManager2D : MonoBehaviour
             return;
         }
 
-        selected.QueueMove(target, append);
+        // SINGLE UNIT
+        if (selectedUnits.Count == 1)
+        {
+            selected.QueueMove(target, append);
+            return;
+        }
+
+        // MULTI UNIT GROUP MOVE
+        Vector2Int primaryPos = selected.GridPosition;
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit == null) continue;
+
+            Vector2Int offset = unit.GridPosition - primaryPos;
+            Vector2Int unitTarget = target + offset;
+
+            if (!grid.IsInside(unitTarget))
+                continue;
+
+            unit.QueueMove(unitTarget, append);
+        }
     }
 
     private bool IsAppendQueueHeld()
@@ -236,6 +258,23 @@ public class SelectionManager2D : MonoBehaviour
         }
 
         Debug.Log($"Selection -> applied order: {order} to {selectedUnits.Count} unit(s)");
+    }
+
+    private void HandleClearPlannedInput()
+    {
+        if (selectedUnits.Count == 0) return;
+
+        if (Input.GetKeyDown(KeyCode.Delete))
+        {
+            for (int i = 0; i < selectedUnits.Count; i++)
+            {
+                GameUnit unit = selectedUnits[i];
+                if (unit != null)
+                    unit.ClearPlannedAction();
+            }
+
+            Debug.Log($"Cleared planned commands for {selectedUnits.Count} unit(s)");
+        }
     }
 
     private void UpdateRangeHighlight()
@@ -313,22 +352,5 @@ public class SelectionManager2D : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMax - thickness, rect.width, thickness), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMin, rect.yMin, thickness, rect.height), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMax - thickness, rect.yMin, thickness, rect.height), Texture2D.whiteTexture);
-    }
-
-    private void HandleClearPlannedInput()
-    {
-    if (selectedUnits.Count == 0) return;
-
-    if (Input.GetKeyDown(KeyCode.Delete))
-    {
-        for (int i = 0; i < selectedUnits.Count; i++)
-        {
-            GameUnit unit = selectedUnits[i];
-            if (unit != null)
-                unit.ClearPlannedAction();
-        }
-
-        Debug.Log($"Cleared planned commands for {selectedUnits.Count} unit(s)");
-    }
     }
 }

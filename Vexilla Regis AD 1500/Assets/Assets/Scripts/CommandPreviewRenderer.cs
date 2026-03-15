@@ -44,6 +44,13 @@ public class CommandPreviewRenderer : MonoBehaviour
             GameUnit unit = GameUnit.AllUnits[u];
             if (unit == null) continue;
 
+            // NIE pokazujemy preview dla AI / wrogów
+            if (!unit.ShowCommandPreview)
+            {
+                HideLine(unit);
+                continue;
+            }
+
             if (unit.PlannedCommands == null || unit.PlannedCommands.Count == 0)
             {
                 HideLine(unit);

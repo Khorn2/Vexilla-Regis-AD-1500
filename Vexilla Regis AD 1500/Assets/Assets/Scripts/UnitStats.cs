@@ -18,4 +18,5 @@ public class UnitStats : ScriptableObject
     [Header("Capabilities")]
     public bool canCharge = true;
     public bool canShoot = false;
+    public bool allowFriendlyFireThroughAlly = false;
 }

@@ -12,9 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
   m_Name: TestShooter
   m_EditorClassIdentifier: 
+  movementRange: 4
   moveSpeedTilesPerSec: 4
+  unitSize: 100
   meleeDamage: 4
   rangedDamage: 10
   shootRange: 5
   canCharge: 1
   canShoot: 1
+  allowFriendlyFireThroughAlly: 1
