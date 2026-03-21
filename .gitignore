@@ -2,13 +2,14 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
+/Vexilla Regis AD 1500/[Ll]ibrary/
+/Vexilla Regis AD 1500/[Tt]emp/
+/Vexilla Regis AD 1500/[Oo]bj/
+/Vexilla Regis AD 1500/[Bb]uild/
+/Vexilla Regis AD 1500/[Bb]uilds/
+/Vexilla Regis AD 1500/[Ll]ogs/
+/Vexilla Regis AD 1500/[Uu]ser[Ss]ettings/
+/Vexilla Regis AD 1500/.vscode/
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
