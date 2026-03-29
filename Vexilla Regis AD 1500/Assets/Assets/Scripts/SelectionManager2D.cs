@@ -21,6 +21,7 @@ public class SelectionManager2D : MonoBehaviour
     private bool isBoxSelecting;
     private Vector2 dragStartScreen;
     private Vector2 dragCurrentScreen;
+    private bool selectionLockedByBattleEnd = false;
 
     private GameUnit PrimarySelected
     {
@@ -42,6 +43,20 @@ public class SelectionManager2D : MonoBehaviour
 
     private void Update()
     {
+        if (turnManager != null && turnManager.IsBattleEnded)
+        {
+            if (!selectionLockedByBattleEnd)
+            {
+                CancelCurrentInputState();
+                ClearSelection();
+                selectionLockedByBattleEnd = true;
+            }
+
+            return;
+        }
+
+        selectionLockedByBattleEnd = false;
+
         HandleLeftMouseSelection();
         HandleRightClick_Action();
         HandleOrderInput();
@@ -51,6 +66,8 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleLeftMouseSelection()
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+
         if (Input.GetMouseButtonDown(0))
         {
             leftMouseDown = true;
@@ -83,6 +100,8 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleSingleClickSelection(bool additive)
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+
         GameUnit clickedUnit = GetPlayerUnitUnderMouse();
 
         if (clickedUnit == null)
@@ -101,6 +120,8 @@ public class SelectionManager2D : MonoBehaviour
 
     private void FinishBoxSelection(bool additive)
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+
         Rect rect = GetScreenRect(dragStartScreen, dragCurrentScreen);
 
         if (!additive)
@@ -110,6 +131,7 @@ public class SelectionManager2D : MonoBehaviour
         {
             GameUnit unit = GameUnit.AllUnits[i];
             if (unit == null) continue;
+            if (unit.IsDead) continue;
             if (unit.TeamId != 0) continue;
 
             Vector3 sp = cam.WorldToScreenPoint(unit.transform.position);
@@ -122,7 +144,10 @@ public class SelectionManager2D : MonoBehaviour
 
     private void AddSelection(GameUnit unit)
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+
         if (unit == null) return;
+        if (unit.IsDead) return;
         if (selectedUnits.Contains(unit)) return;
 
         selectedUnits.Add(unit);
@@ -134,11 +159,12 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleRightClick_Action()
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
         if (!Input.GetMouseButtonDown(1)) return;
         if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
         GameUnit selected = PrimarySelected;
-        if (selected == null || grid == null) return;
+        if (selected == null || selected.IsDead || grid == null) return;
 
         bool append = IsAppendQueueHeld();
 
@@ -184,6 +210,7 @@ public class SelectionManager2D : MonoBehaviour
         {
             GameUnit unit = selectedUnits[i];
             if (unit == null) continue;
+            if (unit.IsDead) continue;
 
             Vector2Int offset = unit.GridPosition - primaryPos;
             Vector2Int unitTarget = target + offset;
@@ -208,7 +235,7 @@ public class SelectionManager2D : MonoBehaviour
         for (int i = 0; i < hits.Length; i++)
         {
             GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
-            if (unit != null && unit.TeamId == 0)
+            if (unit != null && !unit.IsDead && unit.TeamId == 0)
                 return unit;
         }
 
@@ -218,7 +245,7 @@ public class SelectionManager2D : MonoBehaviour
     private GameUnit GetEnemyUnderMouse()
     {
         GameUnit actor = PrimarySelected;
-        if (actor == null) return null;
+        if (actor == null || actor.IsDead) return null;
 
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity, unitMask);
@@ -227,7 +254,7 @@ public class SelectionManager2D : MonoBehaviour
         {
             GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
 
-            if (unit != null && unit.TeamId != actor.TeamId)
+            if (unit != null && !unit.IsDead && unit.TeamId != actor.TeamId)
                 return unit;
         }
 
@@ -236,6 +263,7 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleOrderInput()
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
         if (selectedUnits.Count == 0) return;
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -250,10 +278,12 @@ public class SelectionManager2D : MonoBehaviour
 
     private void SetOrderForSelection(OrderType order)
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+
         for (int i = 0; i < selectedUnits.Count; i++)
         {
             GameUnit unit = selectedUnits[i];
-            if (unit != null)
+            if (unit != null && !unit.IsDead)
                 unit.SetOrder(order);
         }
 
@@ -262,6 +292,7 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleClearPlannedInput()
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
         if (selectedUnits.Count == 0) return;
 
         if (Input.GetKeyDown(KeyCode.Delete))
@@ -269,7 +300,7 @@ public class SelectionManager2D : MonoBehaviour
             for (int i = 0; i < selectedUnits.Count; i++)
             {
                 GameUnit unit = selectedUnits[i];
-                if (unit != null)
+                if (unit != null && !unit.IsDead)
                     unit.ClearPlannedAction();
             }
 
@@ -282,9 +313,15 @@ public class SelectionManager2D : MonoBehaviour
         if (grid == null)
             return;
 
+        if (turnManager != null && turnManager.IsBattleEnded)
+        {
+            grid.ClearHighlights();
+            return;
+        }
+
         GameUnit unit = PrimarySelected;
 
-        if (unit == null)
+        if (unit == null || unit.IsDead)
         {
             grid.ClearHighlights();
             return;
@@ -317,6 +354,12 @@ public class SelectionManager2D : MonoBehaviour
             grid.ClearHighlights();
     }
 
+    private void CancelCurrentInputState()
+    {
+        leftMouseDown = false;
+        isBoxSelecting = false;
+    }
+
     private Rect GetScreenRect(Vector2 p1, Vector2 p2)
     {
         Vector2 min = Vector2.Min(p1, p2);
@@ -326,6 +369,7 @@ public class SelectionManager2D : MonoBehaviour
 
     private void OnGUI()
     {
+        if (turnManager != null && turnManager.IsBattleEnded) return;
         if (!isBoxSelecting) return;
 
         Rect rect = GetScreenRect(dragStartScreen, dragCurrentScreen);

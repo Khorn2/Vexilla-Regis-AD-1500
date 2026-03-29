@@ -71,6 +71,7 @@
     <Compile Include="Assets\Assets\Scripts\PlannedCommand.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderType.cs" />
     <Compile Include="Assets\Assets\Scripts\TurnManager.cs" />
+    <Compile Include="Assets\Assets\Scripts\BattleResultChecker.cs" />
     <Compile Include="Assets\Assets\Scripts\CameraController2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
     <Compile Include="Assets\Assets\Scripts\TestScenarioSpawner.cs" />

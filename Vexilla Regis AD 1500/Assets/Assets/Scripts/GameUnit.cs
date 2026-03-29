@@ -30,6 +30,7 @@ public class GameUnit : MonoBehaviour
     public int CurrentSize => currentSize;
     public UnitStats Stats => stats;
     public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
+    public bool IsDead => currentSize <= 0;
 
     // Tylko jednostki gracza mają pokazywać preview rozkazów
     public bool ShowCommandPreview => teamId == 0;
@@ -325,10 +326,14 @@ public class GameUnit : MonoBehaviour
 
     private void Die()
     {
-        if (grid != null)
-            grid.UnregisterUnit(this, GridPosition);
+    if (grid != null)
+        grid.UnregisterUnit(this, GridPosition);
 
-        Destroy(gameObject);
+    BattleResultChecker battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
+    if (battleResultChecker != null)
+        battleResultChecker.CheckBattleResult();
+
+    Destroy(gameObject);
     }
 
     public void ClearPlannedAction()

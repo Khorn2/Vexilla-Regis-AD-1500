@@ -147,3 +147,6 @@ MonoBehaviour:
   stats: {fileID: 11400000, guid: fe125d7000e46d343b6105cc3c725511, type: 2}
   currentOrder: 0
   teamId: 1
+  allowShotThroughOneAlly: 0
+  targetDamageMultiplierThroughAlly: 0.85
+  allyDamageMultiplier: 0.25

@@ -8,6 +8,8 @@ public class TurnManager : MonoBehaviour
 
     public int TurnNumber { get; private set; } = 0;
     public bool IsPlanningPhase { get; private set; } = true;
+    public bool IsBattleEnded { get; private set; } = false;
+    public bool PlayerWon { get; private set; } = false;
 
     private bool executingTurn = false;
 
@@ -24,6 +26,9 @@ public class TurnManager : MonoBehaviour
 
     private void Update()
     {
+        if (IsBattleEnded)
+            return;
+
         if (!IsPlanningPhase)
             return;
 
@@ -33,9 +38,20 @@ public class TurnManager : MonoBehaviour
         }
     }
 
+    public void EndBattle(bool playerWon)
+    {
+        if (IsBattleEnded)
+            return;
+
+        IsBattleEnded = true;
+        PlayerWon = playerWon;
+        IsPlanningPhase = false;
+        executingTurn = false;
+    }
+
     private IEnumerator ExecuteTurn()
     {
-        if (executingTurn)
+        if (executingTurn || IsBattleEnded)
             yield break;
 
         executingTurn = true;
@@ -43,7 +59,7 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log($"=== EXECUTING TURN {TurnNumber} ===");
 
-        if (enemyAI != null)
+        if (enemyAI != null && !IsBattleEnded)
             enemyAI.PlanEnemyTurn();
 
         List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
@@ -51,24 +67,31 @@ public class TurnManager : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
+            if (IsBattleEnded)
+                yield break;
+
             GameUnit unit = units[i];
             if (unit == null) continue;
+            if (unit.IsDead) continue;
 
             Coroutine c = StartCoroutine(unit.ExecutePlannedAction());
             running.Add(c);
         }
 
-        // czekaj aż wszystkie skończą
         bool anyMoving = true;
 
         while (anyMoving)
         {
+            if (IsBattleEnded)
+                yield break;
+
             anyMoving = false;
 
             for (int i = 0; i < GameUnit.AllUnits.Count; i++)
             {
                 GameUnit unit = GameUnit.AllUnits[i];
                 if (unit == null) continue;
+                if (unit.IsDead) continue;
 
                 if (unit.IsMoving)
                 {
@@ -80,11 +103,19 @@ public class TurnManager : MonoBehaviour
             yield return null;
         }
 
+        if (IsBattleEnded)
+            yield break;
+
         TurnNumber++;
 
         Debug.Log($"=== TURN {TurnNumber} START ===");
 
         IsPlanningPhase = true;
+        executingTurn = false;
+    }
+
+    private void OnDisable()
+    {
         executingTurn = false;
     }
 }

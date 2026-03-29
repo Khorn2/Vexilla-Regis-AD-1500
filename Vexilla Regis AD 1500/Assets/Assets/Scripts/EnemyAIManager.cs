@@ -4,20 +4,31 @@ using UnityEngine;
 public class EnemyAIManager : MonoBehaviour
 {
     [SerializeField] private GridManager grid;
+    [SerializeField] private TurnManager turnManager;
 
     private void Awake()
     {
         if (grid == null)
             grid = FindObjectOfType<GridManager>();
+
+        if (turnManager == null)
+            turnManager = FindObjectOfType<TurnManager>();
     }
 
     public void PlanEnemyTurn()
     {
+        if (turnManager != null && turnManager.IsBattleEnded)
+            return;
+
         List<GameUnit> enemies = GetEnemyUnits();
 
         foreach (GameUnit unit in enemies)
         {
+            if (turnManager != null && turnManager.IsBattleEnded)
+                return;
+
             if (unit == null) continue;
+            if (unit.IsDead) continue;
 
             unit.ClearPlannedAction();
 
@@ -36,7 +47,7 @@ public class EnemyAIManager : MonoBehaviour
 
         foreach (GameUnit unit in GameUnit.AllUnits)
         {
-            if (unit != null && unit.TeamId == 1)
+            if (unit != null && !unit.IsDead && unit.TeamId == 1)
                 result.Add(unit);
         }
 
@@ -49,7 +60,7 @@ public class EnemyAIManager : MonoBehaviour
 
         foreach (GameUnit unit in GameUnit.AllUnits)
         {
-            if (unit != null && unit.TeamId == 0)
+            if (unit != null && !unit.IsDead && unit.TeamId == 0)
                 result.Add(unit);
         }
 
@@ -69,9 +80,6 @@ public class EnemyAIManager : MonoBehaviour
             if (player == null) continue;
 
             float dist = Vector2Int.Distance(enemy.GridPosition, player.GridPosition);
-
-            // niższy score = lepszy cel
-            // bliżej = lepiej, osłabiony = też lepiej
             float score = dist - (player.CurrentSize * 0.01f);
 
             if (score < bestScore)
@@ -89,20 +97,17 @@ public class EnemyAIManager : MonoBehaviour
         if (enemy == null || target == null || grid == null)
             return;
 
-        // jednostka strzelająca
         if (enemy.Stats != null && enemy.Stats.canShoot)
         {
             DecideRangedAction(enemy, target);
             return;
         }
 
-        // jednostka melee
         DecideMeleeAction(enemy, target);
     }
 
     private void DecideRangedAction(GameUnit enemy, GameUnit target)
     {
-        // jeśli wróg obok, ranged przechodzi do melee
         GameUnit adjacentEnemy = FindAdjacentEnemy(enemy);
         if (adjacentEnemy != null)
         {
@@ -111,7 +116,6 @@ public class EnemyAIManager : MonoBehaviour
             return;
         }
 
-        // jeśli da się strzelić -> strzał
         if (CanShootTarget(enemy, target))
         {
             enemy.SetOrder(OrderType.Shoot);
@@ -119,7 +123,6 @@ public class EnemyAIManager : MonoBehaviour
             return;
         }
 
-        // spróbuj ustawić się na tile, z którego będzie mógł strzelać
         if (TryFindBestShootingPosition(enemy, target, out Vector2Int shootingPos))
         {
             enemy.SetOrder(OrderType.March);
@@ -127,7 +130,6 @@ public class EnemyAIManager : MonoBehaviour
             return;
         }
 
-        // fallback: podejdź bliżej
         Vector2Int moveTarget = MoveTowards(enemy, target.GridPosition);
         enemy.SetOrder(OrderType.March);
         enemy.QueueMove(moveTarget, false);
@@ -135,7 +137,6 @@ public class EnemyAIManager : MonoBehaviour
 
     private void DecideMeleeAction(GameUnit enemy, GameUnit target)
     {
-        // jeśli już stoi obok -> atak
         if (enemy.IsAdjacentTo(target))
         {
             enemy.SetOrder(OrderType.Charge);
@@ -143,7 +144,6 @@ public class EnemyAIManager : MonoBehaviour
             return;
         }
 
-        // jeśli da się dobiec do pozycji ataku w tej turze -> szarża
         if (grid.TryGetFreeAdjacentTile(target.GridPosition, enemy.GridPosition, out Vector2Int attackTile))
         {
             Vector2Int resolved = grid.ResolveMoveDestination(enemy, enemy.GridPosition, attackTile);
@@ -155,13 +155,11 @@ public class EnemyAIManager : MonoBehaviour
                 return;
             }
 
-            // nie dobiegnie w tej turze -> podejdź
             enemy.SetOrder(OrderType.March);
             enemy.QueueMove(attackTile, false);
             return;
         }
 
-        // fallback: zwykłe podejście
         Vector2Int moveTarget = MoveTowards(enemy, target.GridPosition);
         enemy.SetOrder(OrderType.March);
         enemy.QueueMove(moveTarget, false);
@@ -172,8 +170,6 @@ public class EnemyAIManager : MonoBehaviour
         if (shooter == null || target == null) return false;
         if (shooter.Stats == null) return false;
         if (!shooter.Stats.canShoot) return false;
-
-        // jeśli wróg obok, strzał zablokowany
         if (shooter.HasAdjacentEnemy()) return false;
 
         float dist = Vector2Int.Distance(shooter.GridPosition, target.GridPosition);
@@ -189,7 +185,7 @@ public class EnemyAIManager : MonoBehaviour
         for (int i = 0; i < neighbours.Length; i++)
         {
             GameUnit other = grid.GetUnitAt(neighbours[i]);
-            if (other != null && other.TeamId != unit.TeamId)
+            if (other != null && !other.IsDead && other.TeamId != unit.TeamId)
                 return other;
         }
 
@@ -218,7 +214,6 @@ public class EnemyAIManager : MonoBehaviour
                 if (!grid.IsInside(candidate))
                     continue;
 
-                // ograniczenie zasięgu ruchu po Manhattan
                 int moveDist = Mathf.Abs(x) + Mathf.Abs(y);
                 if (moveDist > moveRange)
                     continue;
@@ -228,15 +223,12 @@ public class EnemyAIManager : MonoBehaviour
 
                 float targetDist = Vector2Int.Distance(candidate, target.GridPosition);
 
-                // musi wejść w zasięg strzału
                 if (targetDist > shootRange)
                     continue;
 
-                // nie chcemy stawać obok celu jeśli jesteśmy ranged
                 if (targetDist <= 1.5f)
                     continue;
 
-                // preferuj pozycję bliżej obecnej i lekko bliżej celu
                 float score = moveDist + targetDist * 0.25f;
 
                 if (score < bestScore)
