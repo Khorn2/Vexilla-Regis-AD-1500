@@ -9,6 +9,7 @@ public class CommandPreviewRenderer : MonoBehaviour
     [SerializeField] private Color marchColor = Color.blue;
     [SerializeField] private Color chargeColor = Color.red;
     [SerializeField] private Color shootColor = Color.yellow;
+    [SerializeField] private Color retreatColor = Color.gray;
 
     [Header("Style")]
     [SerializeField] private float lineWidth = 0.12f;
@@ -79,7 +80,7 @@ public class CommandPreviewRenderer : MonoBehaviour
         Vector3 current = new Vector3(unit.GridPosition.x, unit.GridPosition.y, -0.2f);
         points.Add(current);
 
-        Color color = marchColor;
+        Color color = GetOrderMoveColor(unit.CurrentOrder);
 
         for (int i = 0; i < unit.PlannedCommands.Count; i++)
         {
@@ -96,7 +97,7 @@ public class CommandPreviewRenderer : MonoBehaviour
                         -0.2f
                     );
 
-                    color = unit.CurrentOrder == OrderType.Charge ? chargeColor : marchColor;
+                    color = GetOrderMoveColor(unit.CurrentOrder);
                     points.Add(current);
                     break;
                 }
@@ -143,6 +144,24 @@ public class CommandPreviewRenderer : MonoBehaviour
 
         line.startColor = color;
         line.endColor = color;
+    }
+
+    private Color GetOrderMoveColor(OrderType order)
+    {
+        switch (order)
+        {
+            case OrderType.Charge:
+                return chargeColor;
+
+            case OrderType.Retreat:
+                return retreatColor;
+
+            case OrderType.Shoot:
+                return shootColor;
+
+            default:
+                return marchColor;
+        }
     }
 
     private LineRenderer GetOrCreateLine(GameUnit unit)

@@ -2,5 +2,6 @@ public enum OrderType
 {
     March,
     Charge,
-    Shoot
+    Shoot,
+    Retreat
 }

@@ -14,6 +14,12 @@ public class GameUnit : MonoBehaviour
     [SerializeField] private UnitStats stats;
     [SerializeField] private OrderType currentOrder = OrderType.March;
 
+    [Header("Order Modifiers")]
+    [SerializeField, Min(1f)] private float chargeMovementRangeMultiplier = 1.5f;
+    [SerializeField, Min(1f)] private float chargeMoveSpeedMultiplier = 1.5f;
+    [SerializeField, Min(1f)] private float retreatMovementRangeMultiplier = 1.5f;
+    [SerializeField, Min(1f)] private float retreatMoveSpeedMultiplier = 1.75f;
+
     [Header("Team")]
     [SerializeField] private int teamId = 0; // 0 = player, 1 = enemy
 
@@ -31,6 +37,7 @@ public class GameUnit : MonoBehaviour
     public UnitStats Stats => stats;
     public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
     public bool IsDead => currentSize <= 0;
+    public bool IsRetreating => currentOrder == OrderType.Retreat;
 
     // Tylko jednostki gracza mają pokazywać preview rozkazów
     public bool ShowCommandPreview => teamId == 0;
@@ -101,6 +108,13 @@ public class GameUnit : MonoBehaviour
             return;
 
         currentOrder = order;
+
+        // Retreat ma być rozkazem ruchowym, więc czyścimy stare ataki.
+        if (currentOrder == OrderType.Retreat)
+        {
+            RemoveAttackCommandsFromQueue();
+        }
+
         Debug.Log($"{name} -> Order changed to: {currentOrder}");
     }
 
@@ -108,8 +122,16 @@ public class GameUnit : MonoBehaviour
     {
         int range = stats.movementRange;
 
-        if (currentOrder == OrderType.Charge)
-            range = Mathf.RoundToInt(range * 1.5f);
+        switch (currentOrder)
+        {
+            case OrderType.Charge:
+                range = Mathf.RoundToInt(range * chargeMovementRangeMultiplier);
+                break;
+
+            case OrderType.Retreat:
+                range = Mathf.RoundToInt(range * retreatMovementRangeMultiplier);
+                break;
+        }
 
         return Mathf.Max(0, range);
     }
@@ -118,8 +140,16 @@ public class GameUnit : MonoBehaviour
     {
         float speed = Mathf.Max(0.1f, stats.moveSpeedTilesPerSec);
 
-        if (currentOrder == OrderType.Charge)
-            speed *= 1.5f;
+        switch (currentOrder)
+        {
+            case OrderType.Charge:
+                speed *= chargeMoveSpeedMultiplier;
+                break;
+
+            case OrderType.Retreat:
+                speed *= retreatMoveSpeedMultiplier;
+                break;
+        }
 
         return speed;
     }
@@ -130,6 +160,7 @@ public class GameUnit : MonoBehaviour
         {
             case OrderType.Charge:
                 return 1.5f;
+
             default:
                 return 1f;
         }
@@ -244,6 +275,12 @@ public class GameUnit : MonoBehaviour
 
     public void AttackMelee(GameUnit target)
     {
+        if (currentOrder == OrderType.Retreat)
+        {
+            Debug.Log($"{name} cannot attack in melee while retreating.");
+            return;
+        }
+
         if (target == null) return;
         if (target == this) return;
         if (target.TeamId == TeamId) return;
@@ -255,6 +292,12 @@ public class GameUnit : MonoBehaviour
 
     public void Shoot(GameUnit target)
     {
+        if (currentOrder == OrderType.Retreat)
+        {
+            Debug.Log($"{name} cannot shoot while retreating.");
+            return;
+        }
+
         if (target == null) return;
         if (target == this) return;
         if (target.TeamId == TeamId) return;
@@ -326,14 +369,14 @@ public class GameUnit : MonoBehaviour
 
     private void Die()
     {
-    if (grid != null)
-        grid.UnregisterUnit(this, GridPosition);
+        if (grid != null)
+            grid.UnregisterUnit(this, GridPosition);
 
-    BattleResultChecker battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
-    if (battleResultChecker != null)
-        battleResultChecker.CheckBattleResult();
+        BattleResultChecker battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
+        if (battleResultChecker != null)
+            battleResultChecker.CheckBattleResult();
 
-    Destroy(gameObject);
+        Destroy(gameObject);
     }
 
     public void ClearPlannedAction()
@@ -352,6 +395,12 @@ public class GameUnit : MonoBehaviour
 
     public void QueueAttack(GameUnit target, bool append)
     {
+        if (currentOrder == OrderType.Retreat)
+        {
+            Debug.Log($"{name} is retreating and cannot queue attack commands.");
+            return;
+        }
+
         if (target == null) return;
 
         if (!append)
@@ -421,6 +470,12 @@ public class GameUnit : MonoBehaviour
 
                 case PlannedCommandType.AttackShoot:
                 {
+                    if (currentOrder == OrderType.Retreat)
+                    {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
+
                     if (cmd.targetUnit == null)
                     {
                         plannedCommands.RemoveAt(0);
@@ -433,6 +488,12 @@ public class GameUnit : MonoBehaviour
 
                 case PlannedCommandType.AttackMelee:
                 {
+                    if (currentOrder == OrderType.Retreat)
+                    {
+                        plannedCommands.RemoveAt(0);
+                        continue;
+                    }
+
                     if (cmd.targetUnit == null)
                     {
                         plannedCommands.RemoveAt(0);
@@ -480,6 +541,17 @@ public class GameUnit : MonoBehaviour
     public void SetTeam(int newTeamId)
     {
         teamId = newTeamId;
+    }
+
+    private void RemoveAttackCommandsFromQueue()
+    {
+        for (int i = plannedCommands.Count - 1; i >= 0; i--)
+        {
+            PlannedCommandType type = plannedCommands[i].commandType;
+
+            if (type == PlannedCommandType.AttackMelee || type == PlannedCommandType.AttackShoot)
+                plannedCommands.RemoveAt(i);
+        }
     }
 
     private Vector2Int GetPointAlongLine(Vector2Int start, Vector2Int end, int maxSteps)
