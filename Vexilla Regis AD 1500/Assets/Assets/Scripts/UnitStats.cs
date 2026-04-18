@@ -8,12 +8,28 @@ public class UnitStats : ScriptableObject
     [Min(0.1f)] public float moveSpeedTilesPerSec = 4f;
 
     [Header("Unit Size")]
-    public int unitSize = 100; // liczebność, pełni funkcję hp
+    [Min(1)] public int unitSize = 100;
 
     [Header("Combat")]
-    public int meleeDamage = 10;
-    public int rangedDamage = 8;
-    public int shootRange = 4;
+    [Min(0)] public int meleeDamage = 10;
+    [Min(0)] public int rangedDamage = 8;
+    [Min(0)] public int shootRange = 4;
+
+    [Header("Morale")]
+    [Min(1)] public int maxMorale = 100;
+    [Min(0)] public int lowMoraleThreshold = 50;
+    [Min(0)] public int brokenMoraleThreshold = 15;
+    [Range(0f, 1f)] public float lowMoraleDamageMultiplier = 0.8f;
+    [Min(0f)] public float moraleDamagePerLostUnit = 2f;
+    [Min(0)] public int passiveMoraleRecovery = 4;
+    [Min(0)] public int idleMoraleRecoveryBonus = 6;
+
+    [Header("Armor")]
+    [Range(0f, 1f)] public float armorPercent = 0.20f;
+
+    [Header("Ammunition")]
+    [Min(0)] public int maxAmmo = 100;
+    [Min(1)] public int ammoPerShot = 10;
 
     [Header("Capabilities")]
     public bool canCharge = true;

@@ -45,7 +45,6 @@ public class CommandPreviewRenderer : MonoBehaviour
             GameUnit unit = GameUnit.AllUnits[u];
             if (unit == null) continue;
 
-            // NIE pokazujemy preview dla AI / wrogów
             if (!unit.ShowCommandPreview)
             {
                 HideLine(unit);
@@ -62,7 +61,6 @@ public class CommandPreviewRenderer : MonoBehaviour
             RenderUnitCommands(unit);
         }
 
-        // schowaj linie jednostek, które już nie istnieją albo nie mają planu
         List<GameUnit> keys = new List<GameUnit>(lineMap.Keys);
         for (int i = 0; i < keys.Count; i++)
         {

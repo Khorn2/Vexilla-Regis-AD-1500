@@ -21,7 +21,7 @@ public class GameUnit : MonoBehaviour
     [SerializeField, Min(1f)] private float retreatMoveSpeedMultiplier = 1.75f;
 
     [Header("Team")]
-    [SerializeField] private int teamId = 0; // 0 = player, 1 = enemy
+    [SerializeField] private int teamId = 0;
 
     [Header("Ranged Through Ally")]
     [SerializeField] private bool allowShotThroughOneAlly = false;
@@ -37,17 +37,25 @@ public class GameUnit : MonoBehaviour
     public OrderType CurrentOrder => currentOrder;
     public int TeamId => teamId;
     public int CurrentSize => currentSize;
+    public int CurrentMorale => currentMorale;
+    public int CurrentAmmo => currentAmmo;
     public UnitStats Stats => stats;
     public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
     public bool IsDead => currentSize <= 0;
+    public bool IsBroken { get; private set; }
     public bool IsRetreating => currentOrder == OrderType.Retreat;
-
-    public bool ShowCommandPreview => teamId == 0;
+    public bool CanReceiveOrders => !IsBroken && !IsDead;
+    public bool ShowCommandPreview => teamId == 0 && !IsBroken;
 
     private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>();
 
     private Coroutine _moveRoutine;
     private int currentSize;
+    private int currentMorale;
+    private int currentAmmo;
+    private bool tookDamageThisTurn;
+    private bool actedThisTurn;
+    private bool isBeingRemoved;
     private GridManager grid;
 
     private void OnEnable()
@@ -73,6 +81,8 @@ public class GameUnit : MonoBehaviour
         }
 
         currentSize = stats.unitSize;
+        currentMorale = stats.maxMorale;
+        currentAmmo = stats.maxAmmo;
 
         if (selectionRing != null)
             selectionRing.SetActive(false);
@@ -90,16 +100,56 @@ public class GameUnit : MonoBehaviour
         SnapToGrid(startPos);
     }
 
+    public void BeginTurnExecution()
+    {
+        if (IsDead || isBeingRemoved)
+            return;
+
+        actedThisTurn = false;
+        tookDamageThisTurn = false;
+
+        if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
+        {
+            Debug.Log($"{name} routed off the battlefield.");
+            Die();
+        }
+    }
+
+    public void ResolveTurnEnd()
+    {
+        if (IsDead || isBeingRemoved || stats == null)
+            return;
+
+        int recovery = tookDamageThisTurn ? 0 : stats.passiveMoraleRecovery;
+
+        if (!actedThisTurn && !tookDamageThisTurn)
+            recovery += stats.idleMoraleRecoveryBonus;
+
+        if (recovery > 0)
+        {
+            currentMorale = Mathf.Clamp(currentMorale + recovery, 0, stats.maxMorale);
+        }
+
+        if (IsBroken && currentMorale >= stats.brokenMoraleThreshold)
+        {
+            IsBroken = false;
+            Debug.Log($"{name} recovered from broken state.");
+        }
+    }
+
     public void SetSelected(bool selected)
     {
-        IsSelected = selected;
+        IsSelected = selected && !IsBroken && !isBeingRemoved;
 
         if (selectionRing != null)
-            selectionRing.SetActive(selected);
+            selectionRing.SetActive(IsSelected);
     }
 
     public void SetOrder(OrderType order)
     {
+        if (IsBroken || isBeingRemoved)
+            return;
+
         if (order == OrderType.Shoot && !stats.canShoot)
             return;
 
@@ -165,18 +215,33 @@ public class GameUnit : MonoBehaviour
 
     public float GetMeleeModifier()
     {
-        switch (currentOrder)
-        {
-            case OrderType.Charge:
-                return 1.5f;
-            default:
-                return 1f;
-        }
+        float modifier = 1f;
+
+        if (currentOrder == OrderType.Charge)
+            modifier *= 1.5f;
+
+        if (currentMorale < stats.lowMoraleThreshold)
+            modifier *= stats.lowMoraleDamageMultiplier;
+
+        if (grid != null)
+            modifier *= grid.GetMeleeDamageMultiplierAt(GridPosition);
+
+        return modifier;
+    }
+
+    public float GetRangedDamageModifier()
+    {
+        float modifier = 1f;
+
+        if (currentMorale < stats.lowMoraleThreshold)
+            modifier *= stats.lowMoraleDamageMultiplier;
+
+        return modifier;
     }
 
     public void SnapToGrid(Vector2Int gridPos)
     {
-        if (grid == null) return;
+        if (grid == null || isBeingRemoved) return;
 
         if (GridPosition != gridPos)
             grid.UnregisterUnit(this, GridPosition);
@@ -190,7 +255,7 @@ public class GameUnit : MonoBehaviour
 
     public void MoveToGrid(Vector2Int desiredTargetGrid, Action onComplete = null)
     {
-        if (currentOrder == OrderType.Shoot)
+        if (currentOrder == OrderType.Shoot || isBeingRemoved)
         {
             onComplete?.Invoke();
             return;
@@ -223,6 +288,7 @@ public class GameUnit : MonoBehaviour
             _moveRoutine = null;
         }
 
+        actedThisTurn = true;
         _moveRoutine = StartCoroutine(MoveRoutine(startGrid, resolvedTarget, onComplete));
     }
 
@@ -288,9 +354,9 @@ public class GameUnit : MonoBehaviour
 
     public void AttackMelee(GameUnit target)
     {
-        if (currentOrder == OrderType.Retreat)
+        if (currentOrder == OrderType.Retreat || IsBroken || isBeingRemoved)
         {
-            Debug.Log($"{name} cannot attack in melee while retreating.");
+            Debug.Log($"{name} cannot attack in melee while retreating or broken.");
             return;
         }
 
@@ -299,15 +365,16 @@ public class GameUnit : MonoBehaviour
         if (target.TeamId == TeamId) return;
         if (!IsAdjacentTo(target)) return;
 
-        int dmg = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier());
-        target.TakeDamage(dmg);
+        int rawDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier());
+        actedThisTurn = true;
+        target.TakeMeleeDamage(this, rawDamage);
     }
 
     public void Shoot(GameUnit target)
     {
-        if (currentOrder == OrderType.Retreat)
+        if (currentOrder == OrderType.Retreat || IsBroken || isBeingRemoved)
         {
-            Debug.Log($"{name} cannot shoot while retreating.");
+            Debug.Log($"{name} cannot shoot while retreating or broken.");
             return;
         }
 
@@ -316,6 +383,12 @@ public class GameUnit : MonoBehaviour
         if (target.TeamId == TeamId) return;
         if (!stats.canShoot) return;
         if (currentOrder != OrderType.Shoot) return;
+
+        if (currentAmmo < stats.ammoPerShot)
+        {
+            Debug.Log($"{name} cannot shoot: insufficient ammo ({currentAmmo}/{stats.ammoPerShot})");
+            return;
+        }
 
         if (HasAdjacentEnemy())
         {
@@ -350,6 +423,15 @@ public class GameUnit : MonoBehaviour
             return;
         }
 
+        int ammoBefore = currentAmmo;
+        currentAmmo = Mathf.Max(0, currentAmmo - stats.ammoPerShot);
+        int ammoSpent = ammoBefore - currentAmmo;
+        Debug.Log($"{name} fired: ammo -{ammoSpent}, remaining: {currentAmmo}");
+
+        actedThisTurn = true;
+
+        int baseRangedDamage = Mathf.RoundToInt(stats.rangedDamage * GetRangedDamageModifier());
+
         if (alliesOnLine == 1)
         {
             if (!allowShotThroughOneAlly)
@@ -358,21 +440,18 @@ public class GameUnit : MonoBehaviour
                 return;
             }
 
-            int rawTargetDmg = Mathf.RoundToInt(stats.rangedDamage * targetDamageMultiplierThroughAlly);
-            int targetDmg = ApplyTerrainDefenseToRangedDamage(rawTargetDmg, target);
+            int rawTargetDmg = Mathf.RoundToInt(baseRangedDamage * targetDamageMultiplierThroughAlly);
+            int rawAllyDmg = Mathf.RoundToInt(baseRangedDamage * allyDamageMultiplier);
 
-            int rawAllyDmg = Mathf.RoundToInt(stats.rangedDamage * allyDamageMultiplier);
-            int allyDmg = ApplyTerrainDefenseToRangedDamage(rawAllyDmg, allyHit);
+            target.TakeRangedDamage(this, rawTargetDmg);
 
             if (allyHit != null)
-                allyHit.TakeDamage(allyDmg);
+                allyHit.TakeRangedDamage(this, rawAllyDmg);
 
-            target.TakeDamage(targetDmg);
             return;
         }
 
-        int finalDamage = ApplyTerrainDefenseToRangedDamage(stats.rangedDamage, target);
-        target.TakeDamage(finalDamage);
+        target.TakeRangedDamage(this, baseRangedDamage);
     }
 
     public void TakeDamage(int dmg)
@@ -384,10 +463,111 @@ public class GameUnit : MonoBehaviour
             Die();
     }
 
+    public void TakeMeleeDamage(GameUnit attacker, int rawDamage)
+    {
+        if (isBeingRemoved)
+            return;
+
+        int finalDamage = ApplyArmorReduction(rawDamage, false);
+
+        currentSize -= finalDamage;
+        ApplyMoraleLoss(finalDamage);
+
+        Debug.Log($"{name} took {finalDamage} melee damage. Current size: {currentSize}, morale: {currentMorale}");
+
+        if (currentSize <= 0)
+            Die();
+    }
+
+    public void TakeRangedDamage(GameUnit attacker, int rawDamage)
+    {
+        if (isBeingRemoved)
+            return;
+
+        int damageAfterTerrain = ApplyTerrainDefenseToRangedDamage(rawDamage);
+        int finalDamage = ApplyArmorReduction(damageAfterTerrain, true);
+
+        currentSize -= finalDamage;
+        ApplyMoraleLoss(finalDamage);
+
+        Debug.Log($"{name} took {finalDamage} ranged damage. Current size: {currentSize}, morale: {currentMorale}");
+
+        if (currentSize <= 0)
+            Die();
+    }
+
+    private int ApplyArmorReduction(int rawDamage, bool againstRanged)
+    {
+        float armor = 0f;
+
+        if (!IsRetreating)
+        {
+            armor = stats != null ? stats.armorPercent : 0f;
+
+            if (grid != null)
+                armor += grid.GetArmorBonusPercentAt(GridPosition);
+
+            if (againstRanged)
+                armor *= 0.5f;
+        }
+
+        armor = Mathf.Clamp01(armor);
+        int reduced = Mathf.RoundToInt(rawDamage * (1f - armor));
+        return Mathf.Max(0, reduced);
+    }
+
+    private int ApplyTerrainDefenseToRangedDamage(int baseDamage)
+    {
+        if (grid != null && grid.IsForestAt(GridPosition))
+        {
+            return Mathf.Max(0, Mathf.RoundToInt(baseDamage * forestRangedDamageMultiplier));
+        }
+
+        return Mathf.Max(0, baseDamage);
+    }
+
+    private void ApplyMoraleLoss(int finalDamage)
+    {
+        tookDamageThisTurn = true;
+
+        int moraleLoss = Mathf.RoundToInt(finalDamage * stats.moraleDamagePerLostUnit);
+        currentMorale = Mathf.Max(0, currentMorale - moraleLoss);
+
+        int lowUnitThreshold = Mathf.CeilToInt(stats.unitSize * 0.2f);
+        if (currentSize > 0 && currentSize <= lowUnitThreshold)
+            currentMorale = 0;
+
+        if (!IsBroken && currentMorale < stats.brokenMoraleThreshold)
+            BreakUnit();
+    }
+
+    private void BreakUnit()
+    {
+        IsBroken = true;
+        currentOrder = OrderType.Retreat;
+        RemoveAttackCommandsFromQueue();
+        plannedCommands.Clear();
+        SetSelected(false);
+
+        Debug.Log($"{name} is broken and starts routing.");
+    }
+
     private void Die()
     {
+        if (isBeingRemoved)
+            return;
+
+        isBeingRemoved = true;
+        currentSize = 0;
+        IsSelected = false;
+
+        if (selectionRing != null)
+            selectionRing.SetActive(false);
+
         if (grid != null)
             grid.UnregisterUnit(this, GridPosition);
+
+        AllUnits.Remove(this);
 
         BattleResultChecker battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
         if (battleResultChecker != null)
@@ -403,6 +583,9 @@ public class GameUnit : MonoBehaviour
 
     public void QueueMove(Vector2Int target, bool append)
     {
+        if (IsBroken || isBeingRemoved)
+            return;
+
         if (!append)
             plannedCommands.Clear();
 
@@ -412,9 +595,9 @@ public class GameUnit : MonoBehaviour
 
     public void QueueAttack(GameUnit target, bool append)
     {
-        if (currentOrder == OrderType.Retreat)
+        if (currentOrder == OrderType.Retreat || IsBroken || isBeingRemoved)
         {
-            Debug.Log($"{name} is retreating and cannot queue attack commands.");
+            Debug.Log($"{name} is retreating/broken and cannot queue attack commands.");
             return;
         }
 
@@ -434,6 +617,15 @@ public class GameUnit : MonoBehaviour
 
     public IEnumerator ExecutePlannedAction()
     {
+        if (IsDead || isBeingRemoved)
+            yield break;
+
+        if (IsBroken)
+        {
+            yield return ExecuteBrokenRetreat();
+            yield break;
+        }
+
         if (plannedCommands.Count == 0)
             yield break;
 
@@ -467,7 +659,7 @@ public class GameUnit : MonoBehaviour
                     Vector2Int startPos = GridPosition;
 
                     Vector2Int stepTarget = grid != null
-                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out int spentCost)
+                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out _)
                         : cmd.targetGridPosition;
 
                     int movementSpent = 0;
@@ -494,7 +686,7 @@ public class GameUnit : MonoBehaviour
 
                 case PlannedCommandType.AttackShoot:
                 {
-                    if (currentOrder == OrderType.Retreat)
+                    if (currentOrder == OrderType.Retreat || IsBroken)
                     {
                         plannedCommands.RemoveAt(0);
                         continue;
@@ -512,7 +704,7 @@ public class GameUnit : MonoBehaviour
 
                 case PlannedCommandType.AttackMelee:
                 {
-                    if (currentOrder == OrderType.Retreat)
+                    if (currentOrder == OrderType.Retreat || IsBroken)
                     {
                         plannedCommands.RemoveAt(0);
                         continue;
@@ -558,6 +750,29 @@ public class GameUnit : MonoBehaviour
                 }
             }
         }
+    }
+
+    private IEnumerator ExecuteBrokenRetreat()
+    {
+        if (grid == null || isBeingRemoved)
+            yield break;
+
+        if (grid.IsAtMapEdge(GridPosition))
+            yield break;
+
+        Vector2Int retreatTarget = grid.GetNearestEdgePosition(GridPosition);
+        int remainingMovement = grid.GetMovementBudgetForUnit(this);
+
+        Vector2Int stepTarget = grid.GetReachablePointAlongLine(this, GridPosition, retreatTarget, remainingMovement, out _);
+
+        if (stepTarget == GridPosition)
+            yield break;
+
+        bool finished = false;
+        MoveToGrid(stepTarget, () => finished = true);
+
+        while (!finished)
+            yield return null;
     }
 
     public void SetTeam(int newTeamId)
@@ -614,18 +829,5 @@ public class GameUnit : MonoBehaviour
         }
 
         return result;
-    }
-
-    private int ApplyTerrainDefenseToRangedDamage(int baseDamage, GameUnit target)
-    {
-        if (target == null)
-            return Mathf.Max(0, baseDamage);
-
-        if (grid != null && grid.IsForestAt(target.GridPosition))
-        {
-            return Mathf.Max(0, Mathf.RoundToInt(baseDamage * forestRangedDamageMultiplier));
-        }
-
-        return Mathf.Max(0, baseDamage);
     }
 }

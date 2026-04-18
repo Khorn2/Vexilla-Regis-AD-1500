@@ -59,11 +59,21 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log($"=== EXECUTING TURN {TurnNumber} ===");
 
+        List<GameUnit> turnStartUnits = new List<GameUnit>(GameUnit.AllUnits);
+
+        for (int i = 0; i < turnStartUnits.Count; i++)
+        {
+            GameUnit unit = turnStartUnits[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+
+            unit.BeginTurnExecution();
+        }
+
         if (enemyAI != null && !IsBattleEnded)
             enemyAI.PlanEnemyTurn();
 
         List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
-        List<Coroutine> running = new List<Coroutine>();
 
         for (int i = 0; i < units.Count; i++)
         {
@@ -74,8 +84,7 @@ public class TurnManager : MonoBehaviour
             if (unit == null) continue;
             if (unit.IsDead) continue;
 
-            Coroutine c = StartCoroutine(unit.ExecutePlannedAction());
-            running.Add(c);
+            StartCoroutine(unit.ExecutePlannedAction());
         }
 
         bool anyMoving = true;
@@ -101,6 +110,20 @@ public class TurnManager : MonoBehaviour
             }
 
             yield return null;
+        }
+
+        if (IsBattleEnded)
+            yield break;
+
+        List<GameUnit> endTurnUnits = new List<GameUnit>(GameUnit.AllUnits);
+
+        for (int i = 0; i < endTurnUnits.Count; i++)
+        {
+            GameUnit unit = endTurnUnits[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+
+            unit.ResolveTurnEnd();
         }
 
         if (IsBattleEnded)

@@ -13,6 +13,9 @@ public class SelectionManager2D : MonoBehaviour
     [Header("Box Selection")]
     [SerializeField] private float dragThreshold = 12f;
 
+    [Header("Manual Retreat Rules")]
+    [SerializeField, Min(1)] private int retreatCooldownTurns = 5;
+
     public GameUnit Selected => PrimarySelected;
 
     private readonly List<GameUnit> selectedUnits = new List<GameUnit>();
@@ -22,6 +25,8 @@ public class SelectionManager2D : MonoBehaviour
     private Vector2 dragStartScreen;
     private Vector2 dragCurrentScreen;
     private bool selectionLockedByBattleEnd = false;
+
+    private int lastManualRetreatTurn = -9999;
 
     private GameUnit PrimarySelected
     {
@@ -133,6 +138,7 @@ public class SelectionManager2D : MonoBehaviour
             if (unit == null) continue;
             if (unit.IsDead) continue;
             if (unit.TeamId != 0) continue;
+            if (unit.IsBroken) continue;
 
             Vector3 sp = cam.WorldToScreenPoint(unit.transform.position);
             if (sp.z < 0f) continue;
@@ -148,6 +154,7 @@ public class SelectionManager2D : MonoBehaviour
 
         if (unit == null) return;
         if (unit.IsDead) return;
+        if (unit.IsBroken) return;
         if (selectedUnits.Contains(unit)) return;
 
         selectedUnits.Add(unit);
@@ -164,7 +171,7 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
         GameUnit selected = PrimarySelected;
-        if (selected == null || selected.IsDead || grid == null) return;
+        if (selected == null || selected.IsDead || selected.IsBroken || grid == null) return;
 
         bool append = IsAppendQueueHeld();
 
@@ -186,7 +193,6 @@ public class SelectionManager2D : MonoBehaviour
         Vector2Int target = grid.WorldToGrid(world);
         if (!grid.IsInside(target)) return;
 
-        // deployment
         if (deploymentManager != null && deploymentManager.DeploymentActive)
         {
             if (!deploymentManager.IsInsideDeploymentZone(target)) return;
@@ -196,14 +202,27 @@ public class SelectionManager2D : MonoBehaviour
             return;
         }
 
-        // SINGLE UNIT
+        if (selected.CurrentOrder == OrderType.Retreat)
+        {
+            if (selectedUnits.Count != 1)
+            {
+                Debug.Log("Manual retreat can be assigned only to one selected unit.");
+                return;
+            }
+
+            if (!grid.IsValidManualRetreatDestination(selected, target))
+            {
+                Debug.Log("Invalid retreat destination: only back/left/right relative to nearest enemy and not next to enemies.");
+                return;
+            }
+        }
+
         if (selectedUnits.Count == 1)
         {
             selected.QueueMove(target, append);
             return;
         }
 
-        // MULTI UNIT GROUP MOVE
         Vector2Int primaryPos = selected.GridPosition;
 
         for (int i = 0; i < selectedUnits.Count; i++)
@@ -211,6 +230,7 @@ public class SelectionManager2D : MonoBehaviour
             GameUnit unit = selectedUnits[i];
             if (unit == null) continue;
             if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
 
             Vector2Int offset = unit.GridPosition - primaryPos;
             Vector2Int unitTarget = target + offset;
@@ -235,7 +255,7 @@ public class SelectionManager2D : MonoBehaviour
         for (int i = 0; i < hits.Length; i++)
         {
             GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
-            if (unit != null && !unit.IsDead && unit.TeamId == 0)
+            if (unit != null && !unit.IsDead && !unit.IsBroken && unit.TeamId == 0)
                 return unit;
         }
 
@@ -276,7 +296,38 @@ public class SelectionManager2D : MonoBehaviour
             SetOrderForSelection(OrderType.Shoot);
 
         if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-            SetOrderForSelection(OrderType.Retreat);
+            TrySetManualRetreat();
+    }
+
+    private void TrySetManualRetreat()
+    {
+        if (turnManager != null && turnManager.IsBattleEnded)
+            return;
+
+        if (selectedUnits.Count != 1)
+        {
+            Debug.Log("Manual retreat can be assigned only to one selected unit.");
+            return;
+        }
+
+        GameUnit unit = selectedUnits[0];
+        if (unit == null || unit.IsDead || unit.IsBroken)
+            return;
+
+        int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
+        int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
+
+        if (turnsSinceLastRetreat < retreatCooldownTurns)
+        {
+            int remaining = retreatCooldownTurns - turnsSinceLastRetreat;
+            Debug.Log($"Manual retreat on cooldown. Available in {remaining} turn(s).");
+            return;
+        }
+
+        unit.SetOrder(OrderType.Retreat);
+        lastManualRetreatTurn = currentTurn;
+
+        Debug.Log($"Selection -> applied order: Retreat to 1 unit. Cooldown: {retreatCooldownTurns} turns.");
     }
 
     private void SetOrderForSelection(OrderType order)
@@ -286,7 +337,7 @@ public class SelectionManager2D : MonoBehaviour
         for (int i = 0; i < selectedUnits.Count; i++)
         {
             GameUnit unit = selectedUnits[i];
-            if (unit != null && !unit.IsDead)
+            if (unit != null && !unit.IsDead && !unit.IsBroken)
                 unit.SetOrder(order);
         }
 
@@ -303,7 +354,7 @@ public class SelectionManager2D : MonoBehaviour
             for (int i = 0; i < selectedUnits.Count; i++)
             {
                 GameUnit unit = selectedUnits[i];
-                if (unit != null && !unit.IsDead)
+                if (unit != null && !unit.IsDead && !unit.IsBroken)
                     unit.ClearPlannedAction();
             }
 
@@ -324,7 +375,7 @@ public class SelectionManager2D : MonoBehaviour
 
         GameUnit unit = PrimarySelected;
 
-        if (unit == null || unit.IsDead)
+        if (unit == null || unit.IsDead || unit.IsBroken)
         {
             grid.ClearHighlights();
             return;

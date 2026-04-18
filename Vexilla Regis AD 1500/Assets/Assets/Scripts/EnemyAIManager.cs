@@ -29,6 +29,7 @@ public class EnemyAIManager : MonoBehaviour
 
             if (unit == null) continue;
             if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
 
             unit.ClearPlannedAction();
 
@@ -60,7 +61,7 @@ public class EnemyAIManager : MonoBehaviour
 
         foreach (GameUnit unit in GameUnit.AllUnits)
         {
-            if (unit != null && !unit.IsDead && unit.TeamId == 0)
+            if (unit != null && !unit.IsDead && !unit.IsBroken && unit.TeamId == 0)
                 result.Add(unit);
         }
 
@@ -171,6 +172,7 @@ public class EnemyAIManager : MonoBehaviour
         if (shooter.Stats == null) return false;
         if (!shooter.Stats.canShoot) return false;
         if (shooter.HasAdjacentEnemy()) return false;
+        if (shooter.CurrentAmmo < shooter.Stats.ammoPerShot) return false;
 
         float dist = Vector2Int.Distance(shooter.GridPosition, target.GridPosition);
         return dist <= shooter.GetCurrentShootRange();
@@ -185,7 +187,7 @@ public class EnemyAIManager : MonoBehaviour
         for (int i = 0; i < neighbours.Length; i++)
         {
             GameUnit other = grid.GetUnitAt(neighbours[i]);
-            if (other != null && !other.IsDead && other.TeamId != unit.TeamId)
+            if (other != null && !other.IsDead && !other.IsBroken && other.TeamId != unit.TeamId)
                 return other;
         }
 

@@ -14,6 +14,11 @@ public class GridManager : MonoBehaviour
     [SerializeField] private int steepHeightThreshold = 3;
     [SerializeField] private int steepHeightExtraCost = 1;
 
+    [Header("Terrain Combat Modifiers")]
+    [SerializeField, Range(0f, 1f)] private float shallowWaterMeleeMultiplier = 0.9f;
+    [SerializeField, Range(0f, 1f)] private float heightMeleeBonusPerLevel = 0.1f;
+    [SerializeField, Range(0f, 1f)] private float forestArmorBonusPercent = 0.2f;
+
     private Dictionary<Vector2Int, Tile> _tiles;
     private Dictionary<Vector2Int, GameUnit> _occupied;
 
@@ -190,6 +195,166 @@ public class GridManager : MonoBehaviour
         return tile != null && tile.TerrainType == TerrainType.Forest;
     }
 
+    public float GetMeleeDamageMultiplierAt(Vector2Int pos)
+    {
+        Tile tile = GetTileAtPosition(pos);
+        if (tile == null)
+            return 1f;
+
+        float multiplier = 1f;
+
+        if (tile.TerrainType == TerrainType.ShallowWater)
+            multiplier *= shallowWaterMeleeMultiplier;
+
+        if (tile.HeightLevel > 1)
+            multiplier *= 1f + ((tile.HeightLevel - 1) * heightMeleeBonusPerLevel);
+
+        return Mathf.Max(0f, multiplier);
+    }
+
+    public float GetArmorBonusPercentAt(Vector2Int pos)
+    {
+        Tile tile = GetTileAtPosition(pos);
+        if (tile == null)
+            return 0f;
+
+        if (tile.TerrainType == TerrainType.Forest)
+            return forestArmorBonusPercent;
+
+        return 0f;
+    }
+
+    public bool IsAtMapEdge(Vector2Int pos)
+    {
+        if (!IsInside(pos))
+            return false;
+
+        return pos.x == 0 || pos.y == 0 || pos.x == width - 1 || pos.y == height - 1;
+    }
+
+    public Vector2Int GetNearestEdgePosition(Vector2Int from)
+    {
+        int leftDist = from.x;
+        int rightDist = (width - 1) - from.x;
+        int bottomDist = from.y;
+        int topDist = (height - 1) - from.y;
+
+        int minDist = leftDist;
+        Vector2Int best = new Vector2Int(0, from.y);
+
+        if (rightDist < minDist)
+        {
+            minDist = rightDist;
+            best = new Vector2Int(width - 1, from.y);
+        }
+
+        if (bottomDist < minDist)
+        {
+            minDist = bottomDist;
+            best = new Vector2Int(from.x, 0);
+        }
+
+        if (topDist < minDist)
+        {
+            best = new Vector2Int(from.x, height - 1);
+        }
+
+        return best;
+    }
+
+    public GameUnit GetNearestEnemy(GameUnit mover)
+    {
+        if (mover == null)
+            return null;
+
+        GameUnit best = null;
+        float bestDist = float.MaxValue;
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.TeamId == mover.TeamId) continue;
+
+            float dist = Vector2Int.Distance(mover.GridPosition, unit.GridPosition);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = unit;
+            }
+        }
+
+        return best;
+    }
+
+    public bool HasAdjacentEnemyForTeam(Vector2Int pos, int teamId)
+    {
+        Vector2Int[] neighbours = GetNeighbours4(pos);
+
+        for (int i = 0; i < neighbours.Length; i++)
+        {
+            Vector2Int n = neighbours[i];
+            if (!IsInside(n)) continue;
+
+            GameUnit unit = GetUnitAt(n);
+            if (unit != null && !unit.IsDead && unit.TeamId != teamId)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool IsValidManualRetreatDestination(GameUnit mover, Vector2Int target)
+    {
+        if (mover == null)
+            return false;
+
+        if (!IsInside(target))
+            return false;
+
+        if (!IsWalkable(target))
+            return false;
+
+        GameUnit unitAtTarget = GetUnitAt(target);
+        if (unitAtTarget != null && unitAtTarget != mover)
+            return false;
+
+        if (HasAdjacentEnemyForTeam(target, mover.TeamId))
+            return false;
+
+        GameUnit nearestEnemy = GetNearestEnemy(mover);
+        if (nearestEnemy == null)
+            return true;
+
+        Vector2Int targetDelta = target - mover.GridPosition;
+        if (targetDelta == Vector2Int.zero)
+            return false;
+
+        Vector2Int threatDirection = GetPrimaryThreatDirection(mover.GridPosition, nearestEnemy.GridPosition);
+        Vector2Int backward = -threatDirection;
+        Vector2Int left = new Vector2Int(-threatDirection.y, threatDirection.x);
+        Vector2Int right = new Vector2Int(threatDirection.y, -threatDirection.x);
+
+        Vector2Int moveDirection = GetPrimaryDirectionFromDelta(targetDelta);
+
+        return moveDirection == backward || moveDirection == left || moveDirection == right;
+    }
+
+    private Vector2Int GetPrimaryThreatDirection(Vector2Int moverPos, Vector2Int enemyPos)
+    {
+        Vector2Int delta = enemyPos - moverPos;
+        return GetPrimaryDirectionFromDelta(delta);
+    }
+
+    private Vector2Int GetPrimaryDirectionFromDelta(Vector2Int delta)
+    {
+        if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
+            return new Vector2Int(delta.x >= 0 ? 1 : -1, 0);
+
+        return new Vector2Int(0, delta.y >= 0 ? 1 : -1);
+    }
+
     public int GetMovementCost(Vector2Int from, Vector2Int to, GameUnit mover)
     {
         if (!IsInside(from) || !IsInside(to))
@@ -302,7 +467,6 @@ public class GridManager : MonoBehaviour
         return lastValid;
     }
 
-    // sojuszników można "przejść", wrogowie blokują ruch
     public Vector2Int ResolveMoveDestination(GameUnit mover, Vector2Int from, Vector2Int desired)
     {
         if (mover == null) return from;
