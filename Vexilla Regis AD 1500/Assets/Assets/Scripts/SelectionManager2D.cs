@@ -332,7 +332,7 @@ public class SelectionManager2D : MonoBehaviour
 
         if (unit.CurrentOrder == OrderType.Shoot && unit.Stats != null && unit.Stats.canShoot)
         {
-            grid.HighlightShootRange(unit.GridPosition, unit.Stats.shootRange);
+            grid.HighlightShootRange(unit.GridPosition, unit.GetCurrentShootRange());
         }
         else
         {

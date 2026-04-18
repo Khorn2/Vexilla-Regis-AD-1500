@@ -173,7 +173,7 @@ public class EnemyAIManager : MonoBehaviour
         if (shooter.HasAdjacentEnemy()) return false;
 
         float dist = Vector2Int.Distance(shooter.GridPosition, target.GridPosition);
-        return dist <= shooter.Stats.shootRange;
+        return dist <= shooter.GetCurrentShootRange();
     }
 
     private GameUnit FindAdjacentEnemy(GameUnit unit)
@@ -196,12 +196,10 @@ public class EnemyAIManager : MonoBehaviour
     {
         bestPos = enemy.GridPosition;
 
-        if (enemy == null || target == null || enemy.Stats == null)
+        if (enemy == null || target == null || enemy.Stats == null || grid == null)
             return false;
 
-        int moveRange = enemy.GetMovementRange();
-        int shootRange = enemy.Stats.shootRange;
-
+        int moveRange = grid.GetMovementBudgetForUnit(enemy);
         float bestScore = float.MaxValue;
         bool found = false;
 
@@ -214,22 +212,26 @@ public class EnemyAIManager : MonoBehaviour
                 if (!grid.IsInside(candidate))
                     continue;
 
-                int moveDist = Mathf.Abs(x) + Mathf.Abs(y);
-                if (moveDist > moveRange)
+                if (!grid.IsWalkable(candidate))
                     continue;
 
                 if (candidate != enemy.GridPosition && grid.IsOccupied(candidate))
                     continue;
 
+                int travelCost = grid.GetTravelCostAlongLine(enemy, enemy.GridPosition, candidate);
+                if (travelCost > moveRange)
+                    continue;
+
+                int candidateShootRange = enemy.Stats.shootRange + grid.GetShootRangeBonusAt(candidate);
                 float targetDist = Vector2Int.Distance(candidate, target.GridPosition);
 
-                if (targetDist > shootRange)
+                if (targetDist > candidateShootRange)
                     continue;
 
                 if (targetDist <= 1.5f)
                     continue;
 
-                float score = moveDist + targetDist * 0.25f;
+                float score = travelCost + targetDist * 0.25f;
 
                 if (score < bestScore)
                 {
@@ -248,7 +250,7 @@ public class EnemyAIManager : MonoBehaviour
         if (mover == null || grid == null)
             return target;
 
-        int moveRange = mover.GetMovementRange();
+        int moveRange = grid.GetMovementBudgetForUnit(mover);
         Vector2Int best = mover.GridPosition;
         float bestDist = Vector2Int.Distance(mover.GridPosition, target);
 
@@ -261,8 +263,11 @@ public class EnemyAIManager : MonoBehaviour
                 if (!grid.IsInside(candidate))
                     continue;
 
-                int moveDist = Mathf.Abs(x) + Mathf.Abs(y);
-                if (moveDist > moveRange)
+                if (!grid.IsWalkable(candidate))
+                    continue;
+
+                int travelCost = grid.GetTravelCostAlongLine(mover, mover.GridPosition, candidate);
+                if (travelCost > moveRange)
                     continue;
 
                 Vector2Int resolved = grid.ResolveMoveDestination(mover, mover.GridPosition, candidate);

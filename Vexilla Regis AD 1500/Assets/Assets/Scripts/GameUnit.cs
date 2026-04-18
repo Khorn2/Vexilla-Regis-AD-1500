@@ -28,6 +28,9 @@ public class GameUnit : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float targetDamageMultiplierThroughAlly = 0.85f;
     [SerializeField, Range(0f, 1f)] private float allyDamageMultiplier = 0.25f;
 
+    [Header("Terrain Combat Modifiers")]
+    [SerializeField, Range(0f, 1f)] private float forestRangedDamageMultiplier = 0.65f;
+
     public bool IsSelected { get; private set; }
     public Vector2Int GridPosition { get; private set; }
     public bool IsMoving => _moveRoutine != null;
@@ -39,7 +42,6 @@ public class GameUnit : MonoBehaviour
     public bool IsDead => currentSize <= 0;
     public bool IsRetreating => currentOrder == OrderType.Retreat;
 
-    // Tylko jednostki gracza mają pokazywać preview rozkazów
     public bool ShowCommandPreview => teamId == 0;
 
     private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>();
@@ -109,11 +111,8 @@ public class GameUnit : MonoBehaviour
 
         currentOrder = order;
 
-        // Retreat ma być rozkazem ruchowym, więc czyścimy stare ataki.
         if (currentOrder == OrderType.Retreat)
-        {
             RemoveAttackCommandsFromQueue();
-        }
 
         Debug.Log($"{name} -> Order changed to: {currentOrder}");
     }
@@ -154,13 +153,22 @@ public class GameUnit : MonoBehaviour
         return speed;
     }
 
+    public int GetCurrentShootRange()
+    {
+        int range = stats != null ? stats.shootRange : 0;
+
+        if (grid != null)
+            range += grid.GetShootRangeBonusAt(GridPosition);
+
+        return Mathf.Max(0, range);
+    }
+
     public float GetMeleeModifier()
     {
         switch (currentOrder)
         {
             case OrderType.Charge:
                 return 1.5f;
-
             default:
                 return 1f;
         }
@@ -194,6 +202,7 @@ public class GameUnit : MonoBehaviour
             return;
         }
 
+        Vector2Int startGrid = GridPosition;
         Vector2Int resolvedTarget = grid.ResolveMoveDestination(this, GridPosition, desiredTargetGrid);
 
         if (resolvedTarget == GridPosition)
@@ -214,17 +223,15 @@ public class GameUnit : MonoBehaviour
             _moveRoutine = null;
         }
 
-        _moveRoutine = StartCoroutine(MoveRoutine(resolvedTarget, onComplete));
+        _moveRoutine = StartCoroutine(MoveRoutine(startGrid, resolvedTarget, onComplete));
     }
 
-    private IEnumerator MoveRoutine(Vector2Int targetGrid, Action onComplete)
+    private IEnumerator MoveRoutine(Vector2Int startGrid, Vector2Int targetGrid, Action onComplete)
     {
         Vector3 start = transform.position;
         Vector3 end = new Vector3(targetGrid.x, targetGrid.y, 0f);
 
-        float distanceTiles = Vector3.Distance(start, end);
-
-        if (distanceTiles <= 0.001f)
+        if (startGrid == targetGrid)
         {
             GridPosition = targetGrid;
             _moveRoutine = null;
@@ -232,7 +239,13 @@ public class GameUnit : MonoBehaviour
             yield break;
         }
 
-        float duration = distanceTiles / GetCurrentMoveSpeed();
+        float movementCost = grid != null
+            ? Mathf.Max(1f, grid.GetTravelCostAlongLine(this, startGrid, targetGrid))
+            : Vector3.Distance(start, end);
+
+        float duration = movementCost / GetCurrentMoveSpeed();
+        duration = Mathf.Max(0.01f, duration);
+
         float t = 0f;
 
         while (t < 1f)
@@ -311,7 +324,7 @@ public class GameUnit : MonoBehaviour
         }
 
         float dist = Vector2Int.Distance(GridPosition, target.GridPosition);
-        if (dist > stats.shootRange) return;
+        if (dist > GetCurrentShootRange()) return;
 
         List<Vector2Int> line = GetLinePoints(GridPosition, target.GridPosition);
 
@@ -345,8 +358,11 @@ public class GameUnit : MonoBehaviour
                 return;
             }
 
-            int targetDmg = Mathf.RoundToInt(stats.rangedDamage * targetDamageMultiplierThroughAlly);
-            int allyDmg = Mathf.RoundToInt(stats.rangedDamage * allyDamageMultiplier);
+            int rawTargetDmg = Mathf.RoundToInt(stats.rangedDamage * targetDamageMultiplierThroughAlly);
+            int targetDmg = ApplyTerrainDefenseToRangedDamage(rawTargetDmg, target);
+
+            int rawAllyDmg = Mathf.RoundToInt(stats.rangedDamage * allyDamageMultiplier);
+            int allyDmg = ApplyTerrainDefenseToRangedDamage(rawAllyDmg, allyHit);
 
             if (allyHit != null)
                 allyHit.TakeDamage(allyDmg);
@@ -355,7 +371,8 @@ public class GameUnit : MonoBehaviour
             return;
         }
 
-        target.TakeDamage(stats.rangedDamage);
+        int finalDamage = ApplyTerrainDefenseToRangedDamage(stats.rangedDamage, target);
+        target.TakeDamage(finalDamage);
     }
 
     public void TakeDamage(int dmg)
@@ -420,7 +437,7 @@ public class GameUnit : MonoBehaviour
         if (plannedCommands.Count == 0)
             yield break;
 
-        int remainingMovement = GetMovementRange();
+        int remainingMovement = grid != null ? grid.GetMovementBudgetForUnit(this) : GetMovementRange();
         int safety = 0;
 
         while (plannedCommands.Count > 0 && safety < 32)
@@ -448,7 +465,14 @@ public class GameUnit : MonoBehaviour
                         yield break;
 
                     Vector2Int startPos = GridPosition;
-                    Vector2Int stepTarget = GetPointAlongLine(startPos, cmd.targetGridPosition, remainingMovement);
+
+                    Vector2Int stepTarget = grid != null
+                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out int spentCost)
+                        : cmd.targetGridPosition;
+
+                    int movementSpent = 0;
+                    if (grid != null)
+                        movementSpent = grid.GetTravelCostAlongLine(this, startPos, stepTarget);
 
                     bool finished = false;
                     MoveToGrid(stepTarget, () => finished = true);
@@ -456,8 +480,8 @@ public class GameUnit : MonoBehaviour
                     while (!finished)
                         yield return null;
 
-                    int moved = CountLineSteps(startPos, GridPosition);
-                    remainingMovement -= moved;
+                    remainingMovement -= movementSpent;
+                    remainingMovement = Mathf.Max(0, remainingMovement);
 
                     if (GridPosition == cmd.targetGridPosition)
                     {
@@ -512,7 +536,7 @@ public class GameUnit : MonoBehaviour
                     if (grid != null && grid.TryGetFreeAdjacentTile(cmd.targetUnit.GridPosition, GridPosition, out Vector2Int attackTile))
                     {
                         Vector2Int startPos = GridPosition;
-                        Vector2Int stepTarget = GetPointAlongLine(startPos, attackTile, remainingMovement);
+                        Vector2Int stepTarget = grid.GetReachablePointAlongLine(this, startPos, attackTile, remainingMovement, out int spentCost);
 
                         bool finished = false;
                         MoveToGrid(stepTarget, () => finished = true);
@@ -520,13 +544,11 @@ public class GameUnit : MonoBehaviour
                         while (!finished)
                             yield return null;
 
-                        int moved = CountLineSteps(startPos, GridPosition);
-                        remainingMovement -= moved;
+                        remainingMovement -= spentCost;
+                        remainingMovement = Mathf.Max(0, remainingMovement);
 
                         if (IsAdjacentTo(cmd.targetUnit))
-                        {
                             AttackMelee(cmd.targetUnit);
-                        }
 
                         yield break;
                     }
@@ -552,23 +574,6 @@ public class GameUnit : MonoBehaviour
             if (type == PlannedCommandType.AttackMelee || type == PlannedCommandType.AttackShoot)
                 plannedCommands.RemoveAt(i);
         }
-    }
-
-    private Vector2Int GetPointAlongLine(Vector2Int start, Vector2Int end, int maxSteps)
-    {
-        List<Vector2Int> line = GetLinePoints(start, end);
-
-        if (line.Count == 0)
-            return start;
-
-        int index = Mathf.Clamp(maxSteps, 0, line.Count - 1);
-        return line[index];
-    }
-
-    private int CountLineSteps(Vector2Int start, Vector2Int end)
-    {
-        List<Vector2Int> line = GetLinePoints(start, end);
-        return Mathf.Max(0, line.Count - 1);
     }
 
     private List<Vector2Int> GetLinePoints(Vector2Int start, Vector2Int end)
@@ -609,5 +614,18 @@ public class GameUnit : MonoBehaviour
         }
 
         return result;
+    }
+
+    private int ApplyTerrainDefenseToRangedDamage(int baseDamage, GameUnit target)
+    {
+        if (target == null)
+            return Mathf.Max(0, baseDamage);
+
+        if (grid != null && grid.IsForestAt(target.GridPosition))
+        {
+            return Mathf.Max(0, Mathf.RoundToInt(baseDamage * forestRangedDamageMultiplier));
+        }
+
+        return Mathf.Max(0, baseDamage);
     }
 }

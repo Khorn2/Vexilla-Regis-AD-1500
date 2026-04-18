@@ -10,8 +10,14 @@ public class GridManager : MonoBehaviour
     [Header("Camera")]
     [SerializeField] private CameraController2D cameraController;
 
+    [Header("Terrain Rules")]
+    [SerializeField] private int steepHeightThreshold = 3;
+    [SerializeField] private int steepHeightExtraCost = 1;
+
     private Dictionary<Vector2Int, Tile> _tiles;
     private Dictionary<Vector2Int, GameUnit> _occupied;
+
+    private readonly List<Tile> highlightedTiles = new List<Tile>();
 
     public int Width => width;
     public int Height => height;
@@ -45,7 +51,7 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                var spawnedTile = Instantiate(tilePrefab, new Vector3(x, y, 0f), Quaternion.identity);
+                Tile spawnedTile = Instantiate(tilePrefab, new Vector3(x, y, 0f), Quaternion.identity);
                 spawnedTile.name = $"Tile {x} {y}";
 
                 bool isOffset = (x % 2 == 0 && y % 2 != 0) || (x % 2 != 0 && y % 2 == 0);
@@ -78,7 +84,12 @@ public class GridManager : MonoBehaviour
 
     public Tile GetTileAtPosition(Vector2Int position)
     {
-        return _tiles.TryGetValue(position, out var tile) ? tile : null;
+        return _tiles.TryGetValue(position, out Tile tile) ? tile : null;
+    }
+
+    public Tile GetTileAt(Vector2Int position)
+    {
+        return GetTileAtPosition(position);
     }
 
     public bool IsOccupied(Vector2Int pos)
@@ -88,7 +99,7 @@ public class GridManager : MonoBehaviour
 
     public GameUnit GetUnitAt(Vector2Int pos)
     {
-        _occupied.TryGetValue(pos, out var unit);
+        _occupied.TryGetValue(pos, out GameUnit unit);
         return unit;
     }
 
@@ -96,8 +107,9 @@ public class GridManager : MonoBehaviour
     {
         if (unit == null) return false;
         if (!IsInside(pos)) return false;
+        if (!IsWalkable(pos)) return false;
 
-        if (_occupied.TryGetValue(pos, out var existing))
+        if (_occupied.TryGetValue(pos, out GameUnit existing))
         {
             if (existing == unit) return true;
             return false;
@@ -111,11 +123,12 @@ public class GridManager : MonoBehaviour
     {
         if (unit == null) return false;
         if (!IsInside(to)) return false;
+        if (!IsWalkable(to)) return false;
 
         if (from == to)
             return true;
 
-        if (_occupied.TryGetValue(to, out var existing) && existing != unit)
+        if (_occupied.TryGetValue(to, out GameUnit existing) && existing != unit)
             return false;
 
         if (_occupied.ContainsKey(from) && _occupied[from] == unit)
@@ -144,53 +157,159 @@ public class GridManager : MonoBehaviour
         };
     }
 
-    // QoL #4: sojuszników można "przejść", wrogowie blokują ruch
-    public Vector2Int ResolveMoveDestination(GameUnit mover, Vector2Int from, Vector2Int desired)
+    public bool IsWalkable(Vector2Int pos)
     {
-    if (mover == null) return from;
-    if (!IsInside(desired)) return from;
+        if (!IsInside(pos))
+            return false;
 
-    int maxRange = mover.GetMovementRange();
-
-    List<Vector2Int> line = GetLine(from, desired);
-
-    Vector2Int lastValid = from;
-    int travelled = 0;
-
-    for (int i = 1; i < line.Count; i++)
-    {
-        Vector2Int p = line[i];
-
-        if (!IsInside(p))
-            break;
-
-        travelled++;
-
-        if (travelled > maxRange)
-            break;
-
-        GameUnit unitAt = GetUnitAt(p);
-
-        if (unitAt == null)
-        {
-            lastValid = p;
-            continue;
-        }
-
-        if (unitAt == mover)
-        {
-            lastValid = p;
-            continue;
-        }
-
-        if (unitAt.TeamId == mover.TeamId)
-            continue;
-
-        // enemy blocks
-        break;
+        Tile tile = GetTileAtPosition(pos);
+        return tile != null && tile.IsWalkable();
     }
 
-    return lastValid;
+    public int GetMovementBudgetForUnit(GameUnit mover)
+    {
+        if (mover == null)
+            return 0;
+
+        int budget = mover.GetMovementRange();
+        return Mathf.Max(0, budget);
+    }
+
+    public int GetShootRangeBonusAt(Vector2Int pos)
+    {
+        Tile tile = GetTileAtPosition(pos);
+        if (tile == null)
+            return 0;
+
+        return tile.GetShootRangeBonus();
+    }
+
+    public bool IsForestAt(Vector2Int pos)
+    {
+        Tile tile = GetTileAtPosition(pos);
+        return tile != null && tile.TerrainType == TerrainType.Forest;
+    }
+
+    public int GetMovementCost(Vector2Int from, Vector2Int to, GameUnit mover)
+    {
+        if (!IsInside(from) || !IsInside(to))
+            return int.MaxValue;
+
+        Tile destinationTile = GetTileAtPosition(to);
+        Tile sourceTile = GetTileAtPosition(from);
+
+        if (destinationTile == null || sourceTile == null)
+            return int.MaxValue;
+
+        if (!destinationTile.IsWalkable())
+            return int.MaxValue;
+
+        int cost = destinationTile.GetBaseMovementCost();
+
+        int heightDelta = destinationTile.HeightLevel - sourceTile.HeightLevel;
+        if (heightDelta >= steepHeightThreshold)
+            cost += steepHeightExtraCost;
+
+        return Mathf.Max(0, cost);
+    }
+
+    public int GetTravelCostAlongLine(GameUnit mover, Vector2Int start, Vector2Int end)
+    {
+        if (mover == null)
+            return 0;
+
+        List<Vector2Int> line = GetLine(start, end);
+        if (line.Count <= 1)
+            return 0;
+
+        int totalCost = 0;
+        Vector2Int previous = line[0];
+
+        for (int i = 1; i < line.Count; i++)
+        {
+            Vector2Int current = line[i];
+            int stepCost = GetMovementCost(previous, current, mover);
+
+            if (stepCost == int.MaxValue)
+                return int.MaxValue;
+
+            totalCost += stepCost;
+            previous = current;
+        }
+
+        return Mathf.Max(0, totalCost);
+    }
+
+    public Vector2Int GetReachablePointAlongLine(GameUnit mover, Vector2Int from, Vector2Int desired, int movementBudget, out int spentCost)
+    {
+        spentCost = 0;
+
+        if (mover == null)
+            return from;
+
+        if (!IsInside(desired))
+            return from;
+
+        List<Vector2Int> line = GetLine(from, desired);
+
+        Vector2Int lastValid = from;
+        Vector2Int previous = from;
+        int runningCost = 0;
+
+        for (int i = 1; i < line.Count; i++)
+        {
+            Vector2Int p = line[i];
+
+            if (!IsInside(p))
+                break;
+
+            int stepCost = GetMovementCost(previous, p, mover);
+            if (stepCost == int.MaxValue)
+                break;
+
+            if (runningCost + stepCost > movementBudget)
+                break;
+
+            GameUnit unitAt = GetUnitAt(p);
+
+            if (unitAt == null)
+            {
+                runningCost += stepCost;
+                lastValid = p;
+                previous = p;
+                continue;
+            }
+
+            if (unitAt == mover)
+            {
+                runningCost += stepCost;
+                lastValid = p;
+                previous = p;
+                continue;
+            }
+
+            if (unitAt.TeamId == mover.TeamId)
+            {
+                runningCost += stepCost;
+                previous = p;
+                continue;
+            }
+
+            break;
+        }
+
+        spentCost = runningCost;
+        return lastValid;
+    }
+
+    // sojuszników można "przejść", wrogowie blokują ruch
+    public Vector2Int ResolveMoveDestination(GameUnit mover, Vector2Int from, Vector2Int desired)
+    {
+        if (mover == null) return from;
+        if (!IsInside(desired)) return from;
+
+        int maxRange = GetMovementBudgetForUnit(mover);
+        return GetReachablePointAlongLine(mover, from, desired, maxRange, out _);
     }
 
     public bool TryGetFreeAdjacentTile(Vector2Int targetPos, Vector2Int attackerPos, out Vector2Int result)
@@ -207,6 +326,7 @@ public class GridManager : MonoBehaviour
             Vector2Int n = neighbours[i];
 
             if (!IsInside(n)) continue;
+            if (!IsWalkable(n)) continue;
             if (IsOccupied(n)) continue;
 
             float dist = Vector2Int.Distance(attackerPos, n);
@@ -261,70 +381,79 @@ public class GridManager : MonoBehaviour
         return result;
     }
 
-    private List<Tile> highlightedTiles = new List<Tile>();
+    public void SetTileTerrain(Vector2Int position, TerrainType terrainType, int heightLevel, Sprite spriteOverride = null)
+    {
+        Tile tile = GetTileAtPosition(position);
+        if (tile == null)
+            return;
+
+        tile.SetTerrain(terrainType, heightLevel);
+        tile.SetTerrainSprite(spriteOverride);
+    }
 
     public void ClearHighlights()
     {
-    for (int i = 0; i < highlightedTiles.Count; i++)
-        highlightedTiles[i].SetRangeHighlight(false);
+        for (int i = 0; i < highlightedTiles.Count; i++)
+            highlightedTiles[i].SetRangeHighlight(false);
 
-    highlightedTiles.Clear();
+        highlightedTiles.Clear();
     }
+
     public void HighlightMovementRange(Vector2Int center, int range)
     {
-    ClearHighlights();
+        ClearHighlights();
 
-    for (int x = -range; x <= range; x++)
-    {
-        for (int y = -range; y <= range; y++)
+        for (int x = -range; x <= range; x++)
         {
-            Vector2Int p = new Vector2Int(center.x + x, center.y + y);
-
-            if (!IsInside(p))
-                continue;
-
-            float dist = Mathf.Abs(x) + Mathf.Abs(y);
-
-            if (dist > range)
-                continue;
-
-            Tile tile = GetTileAtPosition(p);
-
-            if (tile != null)
+            for (int y = -range; y <= range; y++)
             {
-                tile.SetRangeHighlight(true);
-                highlightedTiles.Add(tile);
+                Vector2Int p = new Vector2Int(center.x + x, center.y + y);
+
+                if (!IsInside(p))
+                    continue;
+
+                float dist = Mathf.Abs(x) + Mathf.Abs(y);
+
+                if (dist > range)
+                    continue;
+
+                Tile tile = GetTileAtPosition(p);
+
+                if (tile != null)
+                {
+                    tile.SetRangeHighlight(true);
+                    highlightedTiles.Add(tile);
+                }
             }
         }
-    }
     }
 
     public void HighlightShootRange(Vector2Int center, int range)
     {
-    ClearHighlights();
+        ClearHighlights();
 
-    for (int x = -range; x <= range; x++)
-    {
-        for (int y = -range; y <= range; y++)
+        for (int x = -range; x <= range; x++)
         {
-            Vector2Int p = new Vector2Int(center.x + x, center.y + y);
-
-            if (!IsInside(p))
-                continue;
-
-            float dist = Vector2Int.Distance(center, p);
-
-            if (dist > range)
-                continue;
-
-            Tile tile = GetTileAtPosition(p);
-
-            if (tile != null)
+            for (int y = -range; y <= range; y++)
             {
-                tile.SetRangeHighlight(true);
-                highlightedTiles.Add(tile);
+                Vector2Int p = new Vector2Int(center.x + x, center.y + y);
+
+                if (!IsInside(p))
+                    continue;
+
+                float dist = Vector2Int.Distance(center, p);
+
+                if (dist > range)
+                    continue;
+
+                Tile tile = GetTileAtPosition(p);
+
+                if (tile != null)
+                {
+                    tile.SetRangeHighlight(true);
+                    highlightedTiles.Add(tile);
+                }
             }
         }
-    }
     }
 }

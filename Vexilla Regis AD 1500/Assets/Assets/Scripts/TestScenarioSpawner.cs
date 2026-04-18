@@ -3,8 +3,22 @@ using UnityEngine;
 
 public class TestScenarioSpawner : MonoBehaviour
 {
+    [System.Serializable]
+    public class TerrainPaintData
+    {
+        public Vector2Int gridPosition;
+        public TerrainType terrainType = TerrainType.Plain;
+        [Range(1, 6)] public int heightLevel = 1;
+        public Sprite spriteOverride;
+    }
+
     [SerializeField] private GridManager grid;
+
+    [Header("Units")]
     [SerializeField] private ScenarioSpawnData[] spawns;
+
+    [Header("Terrain")]
+    [SerializeField] private TerrainPaintData[] terrainPaints;
 
     private void Awake()
     {
@@ -14,10 +28,42 @@ public class TestScenarioSpawner : MonoBehaviour
 
     private IEnumerator Start()
     {
-        // czekamy aż GridManager zdąży wygenerować grid
         yield return null;
 
+        ApplyTerrain();
         SpawnScenario();
+    }
+
+    private void ApplyTerrain()
+    {
+        if (grid == null)
+        {
+            Debug.LogError("TestScenarioSpawner: brak GridManager przy ApplyTerrain.");
+            return;
+        }
+
+        if (terrainPaints == null || terrainPaints.Length == 0)
+        {
+            Debug.Log("TestScenarioSpawner: brak wpisów terenu.");
+            return;
+        }
+
+        for (int i = 0; i < terrainPaints.Length; i++)
+        {
+            TerrainPaintData data = terrainPaints[i];
+            if (data == null)
+                continue;
+
+            if (!grid.IsInside(data.gridPosition))
+            {
+                Debug.LogWarning($"Terrain {i}: pozycja poza mapą {data.gridPosition}.");
+                continue;
+            }
+
+            grid.SetTileTerrain(data.gridPosition, data.terrainType, data.heightLevel, data.spriteOverride);
+        }
+
+        Debug.Log($"TestScenarioSpawner: applied terrain entries = {terrainPaints.Length}");
     }
 
     private void SpawnScenario()
@@ -45,6 +91,12 @@ public class TestScenarioSpawner : MonoBehaviour
             if (!grid.IsInside(data.gridPosition))
             {
                 Debug.LogWarning($"Spawn {i}: pozycja poza mapą {data.gridPosition}.");
+                continue;
+            }
+
+            if (!grid.IsWalkable(data.gridPosition))
+            {
+                Debug.LogWarning($"Spawn {i}: teren nieprzechodni na {data.gridPosition}.");
                 continue;
             }
 
