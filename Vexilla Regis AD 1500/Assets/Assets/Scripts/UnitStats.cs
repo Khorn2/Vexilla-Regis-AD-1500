@@ -24,6 +24,13 @@ public class UnitStats : ScriptableObject
     [Min(0)] public int passiveMoraleRecovery = 4;
     [Min(0)] public int idleMoraleRecoveryBonus = 6;
 
+    [Header("Morale Cohesion")]
+    [Min(1)] public int moraleSupportRadius = 3;
+    [Range(0f, 2f)] public float adjacentAllyMoraleLossMultiplier = 0.75f;
+    [Range(0f, 2f)] public float nearbyAllyMoraleLossMultiplier = 0.90f;
+    [Range(0f, 2f)] public float normalMoraleLossMultiplier = 1.00f;
+    [Range(0f, 3f)] public float isolatedMoraleLossMultiplier = 1.35f;
+
     [Header("Armor")]
     [Range(0f, 1f)] public float armorPercent = 0.20f;
 

@@ -288,6 +288,56 @@ public class GridManager : MonoBehaviour
         return best;
     }
 
+    public float GetMoraleCohesionModifier(GameUnit unit)
+{
+    if (unit == null || unit.Stats == null)
+        return 1f;
+
+    int nearestAllyDistance = GetNearestAllyManhattanDistance(unit, unit.Stats.moraleSupportRadius);
+
+    if (nearestAllyDistance == 1)
+        return unit.Stats.adjacentAllyMoraleLossMultiplier;
+
+    if (nearestAllyDistance == 2)
+        return unit.Stats.nearbyAllyMoraleLossMultiplier;
+
+    if (nearestAllyDistance == 3)
+        return unit.Stats.normalMoraleLossMultiplier;
+
+    return unit.Stats.isolatedMoraleLossMultiplier;
+}
+
+    private int GetNearestAllyManhattanDistance(GameUnit unit, int maxRadius)
+    {
+        if (unit == null)
+            return -1;
+
+        int bestDistance = int.MaxValue;
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit other = GameUnit.AllUnits[i];
+
+            if (other == null) continue;
+            if (other == unit) continue;
+            if (other.IsDead) continue;
+            if (other.IsBroken) continue;
+            if (other.TeamId != unit.TeamId) continue;
+
+            int distance =
+                Mathf.Abs(other.GridPosition.x - unit.GridPosition.x) +
+                Mathf.Abs(other.GridPosition.y - unit.GridPosition.y);
+
+            if (distance < bestDistance)
+                bestDistance = distance;
+        }
+
+        if (bestDistance <= maxRadius)
+            return bestDistance;
+
+        return -1;
+    }
+
     public bool HasAdjacentEnemyForTeam(Vector2Int pos, int teamId)
     {
         Vector2Int[] neighbours = GetNeighbours4(pos);

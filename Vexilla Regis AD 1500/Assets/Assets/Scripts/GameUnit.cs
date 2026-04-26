@@ -9,11 +9,12 @@ public class GameUnit : MonoBehaviour
 
     [Header("Visuals")]
     [SerializeField] private GameObject selectionRing;
+    [SerializeField] private GameObject brokenOverlay;
 
     [Header("Data")]
     [SerializeField] private UnitStats stats;
     [SerializeField] private OrderType currentOrder = OrderType.March;
-
+    
     [Header("Order Modifiers")]
     [SerializeField, Min(1f)] private float chargeMovementRangeMultiplier = 1.5f;
     [SerializeField, Min(1f)] private float chargeMoveSpeedMultiplier = 1.5f;
@@ -86,6 +87,9 @@ public class GameUnit : MonoBehaviour
 
         if (selectionRing != null)
             selectionRing.SetActive(false);
+
+        if (brokenOverlay != null)
+        brokenOverlay.SetActive(false);
     }
 
     private void Start()
@@ -133,6 +137,10 @@ public class GameUnit : MonoBehaviour
         if (IsBroken && currentMorale >= stats.brokenMoraleThreshold)
         {
             IsBroken = false;
+
+            if (brokenOverlay != null)
+                brokenOverlay.SetActive(false);
+
             Debug.Log($"{name} recovered from broken state.");
         }
     }
@@ -530,8 +538,18 @@ public class GameUnit : MonoBehaviour
     {
         tookDamageThisTurn = true;
 
-        int moraleLoss = Mathf.RoundToInt(finalDamage * stats.moraleDamagePerLostUnit);
+        float cohesionModifier = 1f;
+
+        if (grid != null && stats != null)
+            cohesionModifier = grid.GetMoraleCohesionModifier(this);
+
+        int moraleLoss = Mathf.RoundToInt(
+            finalDamage * stats.moraleDamagePerLostUnit * cohesionModifier
+        );
+
         currentMorale = Mathf.Max(0, currentMorale - moraleLoss);
+
+        Debug.Log($"{name} morale loss: -{moraleLoss} | cohesion x{cohesionModifier:F2} | morale: {currentMorale}");
 
         int lowUnitThreshold = Mathf.CeilToInt(stats.unitSize * 0.2f);
         if (currentSize > 0 && currentSize <= lowUnitThreshold)
@@ -541,13 +559,16 @@ public class GameUnit : MonoBehaviour
             BreakUnit();
     }
 
-    private void BreakUnit()
+        private void BreakUnit()
     {
         IsBroken = true;
         currentOrder = OrderType.Retreat;
         RemoveAttackCommandsFromQueue();
         plannedCommands.Clear();
         SetSelected(false);
+
+        if (brokenOverlay != null)
+            brokenOverlay.SetActive(true);
 
         Debug.Log($"{name} is broken and starts routing.");
     }
@@ -563,6 +584,9 @@ public class GameUnit : MonoBehaviour
 
         if (selectionRing != null)
             selectionRing.SetActive(false);
+
+        if (brokenOverlay != null)
+        brokenOverlay.SetActive(false);
 
         if (grid != null)
             grid.UnregisterUnit(this, GridPosition);
