@@ -13,6 +13,12 @@ public class TestScenarioSpawner : MonoBehaviour
     }
 
     [SerializeField] private GridManager grid;
+    [SerializeField] private TurnManager turnManager;
+
+    [Header("Scenario Rules")]
+    [SerializeField] private bool useTurnLimit = false;
+    [SerializeField, Min(1)] private int maxTurns = 40;
+    [SerializeField] private bool drawOnTurnLimit = true;
 
     [Header("Units")]
     [SerializeField] private ScenarioSpawnData[] spawns;
@@ -24,14 +30,31 @@ public class TestScenarioSpawner : MonoBehaviour
     {
         if (grid == null)
             grid = FindObjectOfType<GridManager>();
+
+        if (turnManager == null)
+            turnManager = FindObjectOfType<TurnManager>();
     }
 
     private IEnumerator Start()
     {
         yield return null;
 
+        ApplyScenarioRules();
         ApplyTerrain();
         SpawnScenario();
+    }
+
+    private void ApplyScenarioRules()
+    {
+        if (turnManager == null)
+        {
+            Debug.LogWarning("TestScenarioSpawner: brak TurnManager przy ApplyScenarioRules.");
+            return;
+        }
+
+        turnManager.ConfigureTurnLimit(useTurnLimit, maxTurns, drawOnTurnLimit);
+
+        Debug.Log($"Scenario rules: useTurnLimit={useTurnLimit}, maxTurns={maxTurns}, drawOnTurnLimit={drawOnTurnLimit}");
     }
 
     private void ApplyTerrain()

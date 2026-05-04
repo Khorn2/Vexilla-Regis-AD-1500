@@ -24,6 +24,18 @@ public class BattleResultChecker : MonoBehaviour
                 enemyAlive = true;
         }
 
+        if (!playerAlive && !enemyAlive)
+        {
+            battleEnded = true;
+            Debug.Log("Remis");
+
+            TurnManager turnManager = FindFirstObjectByType<TurnManager>();
+            if (turnManager != null)
+                turnManager.EndBattleDraw();
+
+            return;
+        }
+
         if (!playerAlive)
         {
             battleEnded = true;
@@ -42,5 +54,17 @@ public class BattleResultChecker : MonoBehaviour
             if (turnManager != null)
                 turnManager.EndBattle(true);
         }
+    }
+
+    public void ForceDraw()
+    {
+        if (battleEnded) return;
+
+        battleEnded = true;
+        Debug.Log("Remis");
+
+        TurnManager turnManager = FindFirstObjectByType<TurnManager>();
+        if (turnManager != null)
+            turnManager.EndBattleDraw();
     }
 }

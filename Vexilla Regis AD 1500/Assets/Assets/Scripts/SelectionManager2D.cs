@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class SelectionManager2D : MonoBehaviour
 {
@@ -17,6 +18,8 @@ public class SelectionManager2D : MonoBehaviour
     [SerializeField, Min(1)] private int retreatCooldownTurns = 5;
 
     public GameUnit Selected => PrimarySelected;
+    public bool HasSelection => PrimarySelected != null;
+    public int SelectedCount => selectedUnits.Count;
 
     private readonly List<GameUnit> selectedUnits = new List<GameUnit>();
 
@@ -69,9 +72,74 @@ public class SelectionManager2D : MonoBehaviour
         UpdateRangeHighlight();
     }
 
+    public void ApplyOrderFromUI(OrderType order)
+    {
+        if (turnManager != null && turnManager.IsBattleEnded)
+            return;
+
+        if (turnManager != null && !turnManager.IsPlanningPhase)
+            return;
+
+        if (selectedUnits.Count == 0)
+        {
+            Debug.Log($"OrderBar: cannot apply {order}, no selected units.");
+            return;
+        }
+
+        if (order == OrderType.Retreat)
+        {
+            TrySetManualRetreat();
+            return;
+        }
+
+        SetOrderForSelection(order);
+    }
+
+    public bool CanApplyOrderFromUI(OrderType order)
+    {
+        if (turnManager != null && turnManager.IsBattleEnded)
+            return false;
+
+        if (turnManager != null && !turnManager.IsPlanningPhase)
+            return false;
+
+        if (selectedUnits.Count == 0)
+            return false;
+
+        if (order == OrderType.Retreat)
+        {
+            if (selectedUnits.Count != 1)
+                return false;
+
+            int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
+            int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
+
+            return turnsSinceLastRetreat >= retreatCooldownTurns;
+        }
+
+        return true;
+    }
+
+    public int GetManualRetreatCooldownRemaining()
+    {
+        int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
+        int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
+        int remaining = retreatCooldownTurns - turnsSinceLastRetreat;
+
+        return Mathf.Max(0, remaining);
+    }
+
     private void HandleLeftMouseSelection()
     {
         if (turnManager != null && turnManager.IsBattleEnded) return;
+
+        if (IsPointerOverUI())
+        {
+            if (Input.GetMouseButtonDown(0))
+                CancelCurrentInputState();
+
+            return;
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -169,6 +237,7 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded) return;
         if (!Input.GetMouseButtonDown(1)) return;
         if (turnManager != null && !turnManager.IsPlanningPhase) return;
+        if (IsPointerOverUI()) return;
 
         GameUnit selected = PrimarySelected;
         if (selected == null || selected.IsDead || selected.IsBroken || grid == null) return;
@@ -304,6 +373,9 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded)
             return;
 
+        if (turnManager != null && !turnManager.IsPlanningPhase)
+            return;
+
         if (selectedUnits.Count != 1)
         {
             Debug.Log("Manual retreat can be assigned only to one selected unit.");
@@ -333,6 +405,9 @@ public class SelectionManager2D : MonoBehaviour
     private void SetOrderForSelection(OrderType order)
     {
         if (turnManager != null && turnManager.IsBattleEnded) return;
+
+        if (turnManager != null && !turnManager.IsPlanningPhase)
+            return;
 
         for (int i = 0; i < selectedUnits.Count; i++)
         {
@@ -382,13 +457,9 @@ public class SelectionManager2D : MonoBehaviour
         }
 
         if (unit.CurrentOrder == OrderType.Shoot && unit.Stats != null && unit.Stats.canShoot)
-        {
             grid.HighlightShootRange(unit.GridPosition, unit.GetCurrentShootRange());
-        }
         else
-        {
             grid.ClearHighlights();
-        }
     }
 
     private void ClearSelection()
@@ -412,6 +483,11 @@ public class SelectionManager2D : MonoBehaviour
     {
         leftMouseDown = false;
         isBoxSelecting = false;
+    }
+
+    private bool IsPointerOverUI()
+    {
+        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
     }
 
     private Rect GetScreenRect(Vector2 p1, Vector2 p2)

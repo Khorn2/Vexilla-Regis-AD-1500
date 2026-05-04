@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,11 +6,25 @@ using UnityEngine;
 public class TurnManager : MonoBehaviour
 {
     [SerializeField] private EnemyAIManager enemyAI;
+    [SerializeField] private DeploymentManager deploymentManager;
+
+    [Header("Turn Limit")]
+    [SerializeField] private bool useTurnLimit = false;
+    [SerializeField, Min(1)] private int maxTurns = 40;
+    [SerializeField] private bool drawOnTurnLimit = true;
 
     public int TurnNumber { get; private set; } = 0;
     public bool IsPlanningPhase { get; private set; } = true;
     public bool IsBattleEnded { get; private set; } = false;
     public bool PlayerWon { get; private set; } = false;
+    public bool BattleDraw { get; private set; } = false;
+
+    public bool UseTurnLimit => useTurnLimit;
+    public int MaxTurns => maxTurns;
+    public bool DrawOnTurnLimit => drawOnTurnLimit;
+
+    public event Action OnTurnStateChanged;
+    public event Action<bool> OnBattleEnded;
 
     private bool executingTurn = false;
 
@@ -17,11 +32,15 @@ public class TurnManager : MonoBehaviour
     {
         if (enemyAI == null)
             enemyAI = FindObjectOfType<EnemyAIManager>();
+
+        if (deploymentManager == null)
+            deploymentManager = FindObjectOfType<DeploymentManager>();
     }
 
     private void Start()
     {
         Debug.Log("Deployment / Planning Phase (Turn 0)");
+        OnTurnStateChanged?.Invoke();
     }
 
     private void Update()
@@ -33,9 +52,37 @@ public class TurnManager : MonoBehaviour
             return;
 
         if (Input.GetKeyDown(KeyCode.Return))
+            RequestEndTurn();
+    }
+
+    public void RequestEndTurn()
+    {
+        if (IsBattleEnded)
+            return;
+
+        if (!IsPlanningPhase)
+            return;
+
+        if (executingTurn)
+            return;
+
+        if (deploymentManager != null && deploymentManager.DeploymentActive)
         {
-            StartCoroutine(ExecuteTurn());
+            deploymentManager.FinishDeployment();
+            OnTurnStateChanged?.Invoke();
+            return;
         }
+
+        StartCoroutine(ExecuteTurn());
+    }
+
+    public void ConfigureTurnLimit(bool useLimit, int limit, bool drawWhenLimitReached)
+    {
+        useTurnLimit = useLimit;
+        maxTurns = Mathf.Max(1, limit);
+        drawOnTurnLimit = drawWhenLimitReached;
+
+        OnTurnStateChanged?.Invoke();
     }
 
     public void EndBattle(bool playerWon)
@@ -45,8 +92,29 @@ public class TurnManager : MonoBehaviour
 
         IsBattleEnded = true;
         PlayerWon = playerWon;
+        BattleDraw = false;
         IsPlanningPhase = false;
         executingTurn = false;
+
+        OnBattleEnded?.Invoke(playerWon);
+        OnTurnStateChanged?.Invoke();
+    }
+
+    public void EndBattleDraw()
+    {
+        if (IsBattleEnded)
+            return;
+
+        IsBattleEnded = true;
+        PlayerWon = false;
+        BattleDraw = true;
+        IsPlanningPhase = false;
+        executingTurn = false;
+
+        Debug.Log("Remis");
+
+        OnBattleEnded?.Invoke(false);
+        OnTurnStateChanged?.Invoke();
     }
 
     private IEnumerator ExecuteTurn()
@@ -56,6 +124,7 @@ public class TurnManager : MonoBehaviour
 
         executingTurn = true;
         IsPlanningPhase = false;
+        OnTurnStateChanged?.Invoke();
 
         Debug.Log($"=== EXECUTING TURN {TurnNumber} ===");
 
@@ -131,10 +200,22 @@ public class TurnManager : MonoBehaviour
 
         TurnNumber++;
 
+        if (useTurnLimit && TurnNumber >= maxTurns)
+        {
+            if (drawOnTurnLimit)
+                EndBattleDraw();
+            else
+                EndBattle(false);
+
+            yield break;
+        }
+
         Debug.Log($"=== TURN {TurnNumber} START ===");
 
         IsPlanningPhase = true;
         executingTurn = false;
+
+        OnTurnStateChanged?.Invoke();
     }
 
     private void OnDisable()

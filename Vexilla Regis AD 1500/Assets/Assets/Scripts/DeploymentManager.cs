@@ -27,11 +27,18 @@ public class DeploymentManager : MonoBehaviour
         if (!deploymentActive) return;
 
         if (Input.GetKeyDown(KeyCode.Return))
-        {
-            deploymentActive = false;
-            SetBoundaryVisibility(false);
-            Debug.Log("Deployment finished");
-        }
+            FinishDeployment();
+    }
+
+    public void FinishDeployment()
+    {
+        if (!deploymentActive)
+            return;
+
+        deploymentActive = false;
+        SetBoundaryVisibility(false);
+
+        Debug.Log("Deployment finished");
     }
 
     public bool IsInsideDeploymentZone(Vector2Int gridPos)
