@@ -69,8 +69,10 @@
     <Compile Include="Assets\Assets\Scripts\GridManager.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderBarUI.cs" />
     <Compile Include="Assets\Assets\Scripts\UIManager.cs" />
+    <Compile Include="Assets\Assets\Scripts\ScoreMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\PlannedCommand.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderType.cs" />
+    <Compile Include="Assets\Assets\Scripts\BattleStatsTracker.cs" />
     <Compile Include="Assets\Assets\Scripts\TurnManager.cs" />
     <Compile Include="Assets\Assets\Scripts\TerrainType.cs" />
     <Compile Include="Assets\Assets\Scripts\TurnBarUI.cs" />

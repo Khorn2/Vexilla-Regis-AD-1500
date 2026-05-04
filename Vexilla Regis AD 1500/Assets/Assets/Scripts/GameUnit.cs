@@ -104,20 +104,20 @@ public class GameUnit : MonoBehaviour
         SnapToGrid(startPos);
     }
 
-    public void BeginTurnExecution()
-    {
-        if (IsDead || isBeingRemoved)
-            return;
-
-        actedThisTurn = false;
-        tookDamageThisTurn = false;
-
-        if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
+        public void BeginTurnExecution()
         {
-            Debug.Log($"{name} routed off the battlefield.");
-            Die();
+            if (IsDead || isBeingRemoved)
+                return;
+
+            actedThisTurn = false;
+            tookDamageThisTurn = false;
+
+            if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
+            {
+                Debug.Log($"{name} routed off the battlefield.");
+                Die(UnitRemovalReason.Routed);
+            }
         }
-    }
 
     public void ResolveTurnEnd()
     {
@@ -573,12 +573,22 @@ public class GameUnit : MonoBehaviour
         Debug.Log($"{name} is broken and starts routing.");
     }
 
-    private void Die()
+    private void Die(UnitRemovalReason reason = UnitRemovalReason.Killed)
     {
         if (isBeingRemoved)
             return;
 
         isBeingRemoved = true;
+
+        BattleStatsTracker tracker = FindFirstObjectByType<BattleStatsTracker>();
+        if (tracker != null)
+        {
+            if (reason == UnitRemovalReason.Routed)
+                tracker.MarkUnitRouted(this);
+            else
+                tracker.MarkUnitKilled(this);
+        }
+
         currentSize = 0;
         IsSelected = false;
 
@@ -586,7 +596,7 @@ public class GameUnit : MonoBehaviour
             selectionRing.SetActive(false);
 
         if (brokenOverlay != null)
-        brokenOverlay.SetActive(false);
+            brokenOverlay.SetActive(false);
 
         if (grid != null)
             grid.UnregisterUnit(this, GridPosition);

@@ -14,6 +14,7 @@ public class TestScenarioSpawner : MonoBehaviour
 
     [SerializeField] private GridManager grid;
     [SerializeField] private TurnManager turnManager;
+    [SerializeField] private BattleStatsTracker battleStatsTracker;
 
     [Header("Scenario Rules")]
     [SerializeField] private bool useTurnLimit = false;
@@ -33,6 +34,9 @@ public class TestScenarioSpawner : MonoBehaviour
 
         if (turnManager == null)
             turnManager = FindObjectOfType<TurnManager>();
+
+        if (battleStatsTracker == null)
+            battleStatsTracker = FindObjectOfType<BattleStatsTracker>();
     }
 
     private IEnumerator Start()
@@ -40,6 +44,10 @@ public class TestScenarioSpawner : MonoBehaviour
         yield return null;
 
         ApplyScenarioRules();
+
+        if (battleStatsTracker != null)
+            battleStatsTracker.Clear();
+
         ApplyTerrain();
         SpawnScenario();
     }
@@ -151,6 +159,9 @@ public class TestScenarioSpawner : MonoBehaviour
 
             unit.SetTeam(data.teamId);
             unit.SnapToGrid(data.gridPosition);
+
+            if (battleStatsTracker != null)
+                battleStatsTracker.RegisterScenarioUnit(unit);
 
             Debug.Log($"Spawn {i}: SUCCESS -> {go.name} at {data.gridPosition}");
         }
