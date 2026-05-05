@@ -184,6 +184,11 @@ public class TurnManager : MonoBehaviour
         if (IsBattleEnded)
             yield break;
 
+        ResolveAutoMeleePhase();
+
+        if (IsBattleEnded)
+            yield break;
+
         List<GameUnit> endTurnUnits = new List<GameUnit>(GameUnit.AllUnits);
 
         for (int i = 0; i < endTurnUnits.Count; i++)
@@ -216,6 +221,23 @@ public class TurnManager : MonoBehaviour
         executingTurn = false;
 
         OnTurnStateChanged?.Invoke();
+    }
+
+    private void ResolveAutoMeleePhase()
+    {
+        List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            if (IsBattleEnded)
+                return;
+
+            GameUnit unit = units[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+
+            unit.ResolveAutoMeleeCombat();
+        }
     }
 
     private void OnDisable()

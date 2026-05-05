@@ -6,6 +6,13 @@ public class EnemyAIManager : MonoBehaviour
     [SerializeField] private GridManager grid;
     [SerializeField] private TurnManager turnManager;
 
+    private enum ShotQuality
+    {
+        Blocked,
+        RiskyThroughOneAlly,
+        Clean
+    }
+
     private void Awake()
     {
         if (grid == null)
@@ -110,6 +117,7 @@ public class EnemyAIManager : MonoBehaviour
     private void DecideRangedAction(GameUnit enemy, GameUnit target)
     {
         GameUnit adjacentEnemy = FindAdjacentEnemy(enemy);
+
         if (adjacentEnemy != null)
         {
             enemy.SetOrder(OrderType.Charge);
@@ -117,17 +125,47 @@ public class EnemyAIManager : MonoBehaviour
             return;
         }
 
-        if (CanShootTarget(enemy, target))
+        ShotQuality currentShotQuality = EvaluateShotQuality(enemy, enemy.GridPosition, target);
+
+        if (currentShotQuality == ShotQuality.Clean && CanShootTargetFromPosition(enemy, enemy.GridPosition, target))
         {
             enemy.SetOrder(OrderType.Shoot);
             enemy.QueueAttack(target, false);
             return;
         }
 
-        if (TryFindBestShootingPosition(enemy, target, out Vector2Int shootingPos))
+        if (TryFindBestCleanShootingPosition(enemy, target, out Vector2Int cleanShootingPos))
         {
+            if (cleanShootingPos == enemy.GridPosition)
+            {
+                enemy.SetOrder(OrderType.Shoot);
+                enemy.QueueAttack(target, false);
+                return;
+            }
+
             enemy.SetOrder(OrderType.March);
-            enemy.QueueMove(shootingPos, false);
+            enemy.QueueMove(cleanShootingPos, false);
+            return;
+        }
+
+        if (currentShotQuality == ShotQuality.RiskyThroughOneAlly && CanShootTargetFromPosition(enemy, enemy.GridPosition, target))
+        {
+            enemy.SetOrder(OrderType.Shoot);
+            enemy.QueueAttack(target, false);
+            return;
+        }
+
+        if (TryFindBestRiskyShootingPosition(enemy, target, out Vector2Int riskyShootingPos))
+        {
+            if (riskyShootingPos == enemy.GridPosition)
+            {
+                enemy.SetOrder(OrderType.Shoot);
+                enemy.QueueAttack(target, false);
+                return;
+            }
+
+            enemy.SetOrder(OrderType.March);
+            enemy.QueueMove(riskyShootingPos, false);
             return;
         }
 
@@ -166,35 +204,70 @@ public class EnemyAIManager : MonoBehaviour
         enemy.QueueMove(moveTarget, false);
     }
 
-    private bool CanShootTarget(GameUnit shooter, GameUnit target)
+    private bool CanShootTargetFromPosition(GameUnit shooter, Vector2Int shooterPosition, GameUnit target)
     {
         if (shooter == null || target == null) return false;
         if (shooter.Stats == null) return false;
         if (!shooter.Stats.canShoot) return false;
-        if (shooter.HasAdjacentEnemy()) return false;
         if (shooter.CurrentAmmo < shooter.Stats.ammoPerShot) return false;
 
-        float dist = Vector2Int.Distance(shooter.GridPosition, target.GridPosition);
-        return dist <= shooter.GetCurrentShootRange();
+        if (grid.HasAdjacentEnemyForTeam(shooterPosition, shooter.TeamId))
+            return false;
+
+        int range = shooter.Stats.shootRange + grid.GetShootRangeBonusAt(shooterPosition);
+        float dist = Vector2Int.Distance(shooterPosition, target.GridPosition);
+
+        return dist <= range;
     }
 
-    private GameUnit FindAdjacentEnemy(GameUnit unit)
+    private ShotQuality EvaluateShotQuality(GameUnit shooter, Vector2Int shooterPosition, GameUnit target)
     {
-        if (unit == null || grid == null) return null;
+        if (shooter == null || target == null || grid == null)
+            return ShotQuality.Blocked;
 
-        Vector2Int[] neighbours = grid.GetNeighbours4(unit.GridPosition);
+        if (!CanShootTargetFromPosition(shooter, shooterPosition, target))
+            return ShotQuality.Blocked;
 
-        for (int i = 0; i < neighbours.Length; i++)
+        List<Vector2Int> line = GetLinePoints(shooterPosition, target.GridPosition);
+
+        int alliesOnLine = 0;
+
+        for (int i = 1; i < line.Count - 1; i++)
         {
-            GameUnit other = grid.GetUnitAt(neighbours[i]);
-            if (other != null && !other.IsDead && !other.IsBroken && other.TeamId != unit.TeamId)
-                return other;
+            GameUnit unitOnLine = grid.GetUnitAt(line[i]);
+            if (unitOnLine == null)
+                continue;
+
+            if (unitOnLine.TeamId == shooter.TeamId)
+            {
+                alliesOnLine++;
+
+                if (alliesOnLine >= 2)
+                    return ShotQuality.Blocked;
+            }
+            else
+            {
+                return ShotQuality.Blocked;
+            }
         }
 
-        return null;
+        if (alliesOnLine == 1)
+            return ShotQuality.RiskyThroughOneAlly;
+
+        return ShotQuality.Clean;
     }
 
-    private bool TryFindBestShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos)
+    private bool TryFindBestCleanShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos)
+    {
+        return TryFindBestShootingPositionByQuality(enemy, target, ShotQuality.Clean, out bestPos);
+    }
+
+    private bool TryFindBestRiskyShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos)
+    {
+        return TryFindBestShootingPositionByQuality(enemy, target, ShotQuality.RiskyThroughOneAlly, out bestPos);
+    }
+
+    private bool TryFindBestShootingPositionByQuality(GameUnit enemy, GameUnit target, ShotQuality requiredQuality, out Vector2Int bestPos)
     {
         bestPos = enemy.GridPosition;
 
@@ -217,23 +290,25 @@ public class EnemyAIManager : MonoBehaviour
                 if (!grid.IsWalkable(candidate))
                     continue;
 
-                if (candidate != enemy.GridPosition && grid.IsOccupied(candidate))
+                GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
+                if (unitAtCandidate != null && unitAtCandidate != enemy)
                     continue;
 
-                int travelCost = grid.GetTravelCostAlongLine(enemy, enemy.GridPosition, candidate);
+                int travelCost = GetPathTravelCost(enemy, candidate);
+                if (travelCost == int.MaxValue)
+                    continue;
+
                 if (travelCost > moveRange)
                     continue;
 
-                int candidateShootRange = enemy.Stats.shootRange + grid.GetShootRangeBonusAt(candidate);
+                ShotQuality quality = EvaluateShotQuality(enemy, candidate, target);
+
+                if (quality != requiredQuality)
+                    continue;
+
                 float targetDist = Vector2Int.Distance(candidate, target.GridPosition);
-
-                if (targetDist > candidateShootRange)
-                    continue;
-
-                if (targetDist <= 1.5f)
-                    continue;
-
-                float score = travelCost + targetDist * 0.25f;
+                float terrainScore = GetShootingTerrainScore(candidate);
+                float score = travelCost + targetDist * 0.25f - terrainScore;
 
                 if (score < bestScore)
                 {
@@ -245,6 +320,82 @@ public class EnemyAIManager : MonoBehaviour
         }
 
         return found;
+    }
+
+    private int GetPathTravelCost(GameUnit mover, Vector2Int target)
+    {
+        if (mover == null || grid == null)
+            return int.MaxValue;
+
+        if (target == mover.GridPosition)
+            return 0;
+
+        GridPathfinder pathfinder = new GridPathfinder(grid);
+        List<Vector2Int> path = pathfinder.FindPath(mover.GridPosition, target, mover);
+
+        if (path == null || path.Count == 0)
+            return int.MaxValue;
+
+        int totalCost = 0;
+        Vector2Int previous = mover.GridPosition;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector2Int current = path[i];
+            int stepCost = grid.GetMovementCost(previous, current, mover);
+
+            if (stepCost == int.MaxValue)
+                return int.MaxValue;
+
+            totalCost += stepCost;
+            previous = current;
+        }
+
+        return totalCost;
+    }
+
+    private float GetShootingTerrainScore(Vector2Int position)
+    {
+        Tile tile = grid.GetTileAt(position);
+        if (tile == null)
+            return 0f;
+
+        float score = 0f;
+
+        if (tile.HeightLevel >= 2)
+            score += tile.HeightLevel * 0.5f;
+
+        if (tile.TerrainType == TerrainType.Forest)
+            score += 0.75f;
+
+        if (tile.TerrainType == TerrainType.Road)
+            score += 0.25f;
+
+        if (tile.TerrainType == TerrainType.ShallowWater)
+            score -= 1.0f;
+
+        if (tile.TerrainType == TerrainType.RoughTerrain)
+            score -= 0.25f;
+
+        return score;
+    }
+
+    private GameUnit FindAdjacentEnemy(GameUnit unit)
+    {
+        if (unit == null || grid == null)
+            return null;
+
+        Vector2Int[] neighbours = grid.GetNeighbours4(unit.GridPosition);
+
+        for (int i = 0; i < neighbours.Length; i++)
+        {
+            GameUnit other = grid.GetUnitAt(neighbours[i]);
+
+            if (other != null && !other.IsDead && !other.IsBroken && other.TeamId != unit.TeamId)
+                return other;
+        }
+
+        return null;
     }
 
     private Vector2Int MoveTowards(GameUnit mover, Vector2Int target)
@@ -268,25 +419,97 @@ public class EnemyAIManager : MonoBehaviour
                 if (!grid.IsWalkable(candidate))
                     continue;
 
-                int travelCost = grid.GetTravelCostAlongLine(mover, mover.GridPosition, candidate);
+                GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
+                if (unitAtCandidate != null && unitAtCandidate != mover)
+                    continue;
+
+                int travelCost = GetPathTravelCost(mover, candidate);
+                if (travelCost == int.MaxValue)
+                    continue;
+
                 if (travelCost > moveRange)
                     continue;
 
-                Vector2Int resolved = grid.ResolveMoveDestination(mover, mover.GridPosition, candidate);
+                float distToTarget = Vector2Int.Distance(candidate, target);
+                float terrainScore = GetMovementTerrainScore(candidate);
+                float score = distToTarget - terrainScore;
 
-                if (resolved == mover.GridPosition)
-                    continue;
+                float bestScore = bestDist - GetMovementTerrainScore(best);
 
-                float distToTarget = Vector2Int.Distance(resolved, target);
-
-                if (distToTarget < bestDist)
+                if (score < bestScore)
                 {
                     bestDist = distToTarget;
-                    best = resolved;
+                    best = candidate;
                 }
             }
         }
 
         return best;
+    }
+
+    private float GetMovementTerrainScore(Vector2Int position)
+    {
+        Tile tile = grid.GetTileAt(position);
+        if (tile == null)
+            return 0f;
+
+        float score = 0f;
+
+        if (tile.TerrainType == TerrainType.Road)
+            score += 0.35f;
+
+        if (tile.TerrainType == TerrainType.Forest)
+            score += 0.15f;
+
+        if (tile.TerrainType == TerrainType.ShallowWater)
+            score -= 0.75f;
+
+        if (tile.TerrainType == TerrainType.RoughTerrain)
+            score -= 0.25f;
+
+        if (tile.HeightLevel >= 2)
+            score += tile.HeightLevel * 0.1f;
+
+        return score;
+    }
+
+    private List<Vector2Int> GetLinePoints(Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> result = new List<Vector2Int>();
+
+        int x0 = start.x;
+        int y0 = start.y;
+        int x1 = end.x;
+        int y1 = end.y;
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dy = Mathf.Abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true)
+        {
+            result.Add(new Vector2Int(x0, y0));
+
+            if (x0 == x1 && y0 == y1)
+                break;
+
+            int e2 = 2 * err;
+
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+
+        return result;
     }
 }

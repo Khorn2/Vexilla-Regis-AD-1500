@@ -11,6 +11,9 @@ public class SelectionManager2D : MonoBehaviour
     [SerializeField] private CameraController2D cameraController;
     [SerializeField] private TurnManager turnManager;
 
+    [Header("Tooltip")]
+    [SerializeField] private UnitNameTooltipUI unitNameTooltip;
+
     [Header("Box Selection")]
     [SerializeField] private float dragThreshold = 12f;
 
@@ -47,6 +50,7 @@ public class SelectionManager2D : MonoBehaviour
         if (deploymentManager == null) deploymentManager = FindObjectOfType<DeploymentManager>();
         if (cameraController == null) cameraController = FindObjectOfType<CameraController2D>();
         if (turnManager == null) turnManager = FindObjectOfType<TurnManager>();
+        if (unitNameTooltip == null) unitNameTooltip = FindObjectOfType<UnitNameTooltipUI>();
     }
 
     private void Update()
@@ -74,11 +78,8 @@ public class SelectionManager2D : MonoBehaviour
 
     public void ApplyOrderFromUI(OrderType order)
     {
-        if (turnManager != null && turnManager.IsBattleEnded)
-            return;
-
-        if (turnManager != null && !turnManager.IsPlanningPhase)
-            return;
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+        if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
         if (selectedUnits.Count == 0)
         {
@@ -97,19 +98,13 @@ public class SelectionManager2D : MonoBehaviour
 
     public bool CanApplyOrderFromUI(OrderType order)
     {
-        if (turnManager != null && turnManager.IsBattleEnded)
-            return false;
-
-        if (turnManager != null && !turnManager.IsPlanningPhase)
-            return false;
-
-        if (selectedUnits.Count == 0)
-            return false;
+        if (turnManager != null && turnManager.IsBattleEnded) return false;
+        if (turnManager != null && !turnManager.IsPlanningPhase) return false;
+        if (selectedUnits.Count == 0) return false;
 
         if (order == OrderType.Retreat)
         {
-            if (selectedUnits.Count != 1)
-                return false;
+            if (selectedUnits.Count != 1) return false;
 
             int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
             int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
@@ -173,8 +168,6 @@ public class SelectionManager2D : MonoBehaviour
 
     private void HandleSingleClickSelection(bool additive)
     {
-        if (turnManager != null && turnManager.IsBattleEnded) return;
-
         GameUnit clickedUnit = GetPlayerUnitUnderMouse();
 
         if (clickedUnit == null)
@@ -193,8 +186,6 @@ public class SelectionManager2D : MonoBehaviour
 
     private void FinishBoxSelection(bool additive)
     {
-        if (turnManager != null && turnManager.IsBattleEnded) return;
-
         Rect rect = GetScreenRect(dragStartScreen, dragCurrentScreen);
 
         if (!additive)
@@ -208,6 +199,12 @@ public class SelectionManager2D : MonoBehaviour
             if (unit.TeamId != 0) continue;
             if (unit.IsBroken) continue;
 
+            if (deploymentManager != null && deploymentManager.DeploymentActive)
+            {
+                if (!deploymentManager.IsInsideDeploymentZone(unit.GridPosition))
+                    continue;
+            }
+
             Vector3 sp = cam.WorldToScreenPoint(unit.transform.position);
             if (sp.z < 0f) continue;
 
@@ -218,12 +215,16 @@ public class SelectionManager2D : MonoBehaviour
 
     private void AddSelection(GameUnit unit)
     {
-        if (turnManager != null && turnManager.IsBattleEnded) return;
-
         if (unit == null) return;
         if (unit.IsDead) return;
         if (unit.IsBroken) return;
         if (selectedUnits.Contains(unit)) return;
+
+        if (deploymentManager != null && deploymentManager.DeploymentActive)
+        {
+            if (!deploymentManager.IsInsideDeploymentZone(unit.GridPosition))
+                return;
+        }
 
         selectedUnits.Add(unit);
         unit.SetSelected(true);
@@ -239,6 +240,20 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && !turnManager.IsPlanningPhase) return;
         if (IsPointerOverUI()) return;
 
+        if (selectedUnits.Count == 0)
+        {
+            GameUnit clickedAnyUnit = GetAnyUnitUnderMouse();
+
+            Debug.Log(clickedAnyUnit != null
+                ? $"Right click unit: {clickedAnyUnit.name}"
+                : "Right click: no unit hit");
+
+            if (clickedAnyUnit != null && unitNameTooltip != null)
+                unitNameTooltip.Show(clickedAnyUnit);
+
+            return;
+        }
+
         GameUnit selected = PrimarySelected;
         if (selected == null || selected.IsDead || selected.IsBroken || grid == null) return;
 
@@ -248,7 +263,7 @@ public class SelectionManager2D : MonoBehaviour
 
         if (clickedEnemy != null)
         {
-            selected.QueueAttack(clickedEnemy, append);
+            QueueGroupAttack(clickedEnemy, append);
             return;
         }
 
@@ -264,10 +279,7 @@ public class SelectionManager2D : MonoBehaviour
 
         if (deploymentManager != null && deploymentManager.DeploymentActive)
         {
-            if (!deploymentManager.IsInsideDeploymentZone(target)) return;
-            if (grid.IsOccupied(target)) return;
-
-            selected.SnapToGrid(target);
+            MoveSelectedUnitsDuringDeployment(target);
             return;
         }
 
@@ -281,18 +293,91 @@ public class SelectionManager2D : MonoBehaviour
 
             if (!grid.IsValidManualRetreatDestination(selected, target))
             {
-                Debug.Log("Invalid retreat destination: only back/left/right relative to nearest enemy and not next to enemies.");
+                Debug.Log("Invalid retreat destination.");
                 return;
             }
         }
 
-        if (selectedUnits.Count == 1)
+        QueueGroupMove(target, append);
+    }
+
+    private GameUnit GetAnyUnitUnderMouse()
+    {
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit2D[] hits = Physics2D.GetRayIntersectionAll(ray, Mathf.Infinity, unitMask);
+
+        for (int i = 0; i < hits.Length; i++)
         {
-            selected.QueueMove(target, append);
+            GameUnit unit = hits[i].collider.GetComponentInParent<GameUnit>();
+
+            if (unit != null && !unit.IsDead)
+                return unit;
+        }
+
+        return null;
+    }
+
+    private void MoveSelectedUnitsDuringDeployment(Vector2Int target)
+    {
+        GameUnit primary = PrimarySelected;
+        if (primary == null) return;
+
+        Vector2Int primaryPos = primary.GridPosition;
+
+        if (!CanPlaceWholeFormation(target, primaryPos, true))
+        {
+            Debug.Log("Cannot move formation: at least one target tile is invalid.");
             return;
         }
 
-        Vector2Int primaryPos = selected.GridPosition;
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit == null) continue;
+
+            Vector2Int offset = unit.GridPosition - primaryPos;
+            Vector2Int unitTarget = target + offset;
+
+            unit.SnapToGrid(unitTarget);
+        }
+    }
+
+    private void QueueGroupMove(Vector2Int target, bool append)
+    {
+        GameUnit primary = PrimarySelected;
+        if (primary == null) return;
+
+        if (selectedUnits.Count == 1)
+        {
+            primary.QueueMove(target, append);
+            return;
+        }
+
+        Vector2Int primaryPos = primary.GridPosition;
+
+        if (!CanPlaceWholeFormation(target, primaryPos, false))
+        {
+            Debug.Log("Cannot queue formation move: at least one target tile is invalid.");
+            return;
+        }
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
+
+            Vector2Int offset = unit.GridPosition - primaryPos;
+            Vector2Int unitTarget = target + offset;
+
+            unit.QueueMove(unitTarget, append);
+        }
+    }
+
+    private bool CanPlaceWholeFormation(Vector2Int target, Vector2Int primaryPos, bool requireDeploymentZone)
+    {
+        HashSet<Vector2Int> plannedTargets = new HashSet<Vector2Int>();
 
         for (int i = 0; i < selectedUnits.Count; i++)
         {
@@ -305,10 +390,47 @@ public class SelectionManager2D : MonoBehaviour
             Vector2Int unitTarget = target + offset;
 
             if (!grid.IsInside(unitTarget))
-                continue;
+                return false;
 
-            unit.QueueMove(unitTarget, append);
+            if (!grid.IsWalkable(unitTarget))
+                return false;
+
+            if (requireDeploymentZone)
+            {
+                if (deploymentManager == null || !deploymentManager.IsInsideDeploymentZone(unitTarget))
+                    return false;
+            }
+
+            if (plannedTargets.Contains(unitTarget))
+                return false;
+
+            GameUnit occupyingUnit = grid.GetUnitAt(unitTarget);
+
+            if (occupyingUnit != null && !selectedUnits.Contains(occupyingUnit))
+                return false;
+
+            plannedTargets.Add(unitTarget);
         }
+
+        return true;
+    }
+
+    private void QueueGroupAttack(GameUnit clickedEnemy, bool append)
+    {
+        if (clickedEnemy == null)
+            return;
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
+
+            unit.QueueAttack(clickedEnemy, append);
+        }
+
+        Debug.Log($"Group attack queued: {selectedUnits.Count} unit(s) -> {clickedEnemy.name}");
     }
 
     private bool IsAppendQueueHeld()
@@ -370,11 +492,8 @@ public class SelectionManager2D : MonoBehaviour
 
     private void TrySetManualRetreat()
     {
-        if (turnManager != null && turnManager.IsBattleEnded)
-            return;
-
-        if (turnManager != null && !turnManager.IsPlanningPhase)
-            return;
+        if (turnManager != null && turnManager.IsBattleEnded) return;
+        if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
         if (selectedUnits.Count != 1)
         {
@@ -405,9 +524,7 @@ public class SelectionManager2D : MonoBehaviour
     private void SetOrderForSelection(OrderType order)
     {
         if (turnManager != null && turnManager.IsBattleEnded) return;
-
-        if (turnManager != null && !turnManager.IsPlanningPhase)
-            return;
+        if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
         for (int i = 0; i < selectedUnits.Count; i++)
         {

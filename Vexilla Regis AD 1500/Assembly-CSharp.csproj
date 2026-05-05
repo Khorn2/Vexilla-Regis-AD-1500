@@ -81,10 +81,12 @@
     <Compile Include="Assets\Assets\Scripts\HealthBarsToggleButtonUI.cs" />
     <Compile Include="Assets\Assets\Scripts\CameraController2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
+    <Compile Include="Assets\Assets\Scripts\UnitNameTooltipUI.cs" />
     <Compile Include="Assets\Assets\Scripts\TestScenarioSpawner.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />
     <Compile Include="Assets\Assets\Scripts\CommandPreviewRenderer.cs" />
     <Compile Include="Assets\Assets\Scripts\UnitStats.cs" />
+    <Compile Include="Assets\Assets\Scripts\GridPathfinder.cs" />
     <Compile Include="Assets\Assets\Scripts\DeploymentManager.cs" />
   </ItemGroup>
   <ItemGroup>

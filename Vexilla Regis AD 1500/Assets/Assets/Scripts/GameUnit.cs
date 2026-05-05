@@ -5,6 +5,12 @@ using UnityEngine;
 
 public class GameUnit : MonoBehaviour
 {
+    private enum UnitRemovalReason
+    {
+        Killed,
+        Routed
+    }
+
     public static readonly List<GameUnit> AllUnits = new List<GameUnit>();
 
     [Header("Visuals")]
@@ -14,7 +20,7 @@ public class GameUnit : MonoBehaviour
     [Header("Data")]
     [SerializeField] private UnitStats stats;
     [SerializeField] private OrderType currentOrder = OrderType.March;
-    
+
     [Header("Order Modifiers")]
     [SerializeField, Min(1f)] private float chargeMovementRangeMultiplier = 1.5f;
     [SerializeField, Min(1f)] private float chargeMoveSpeedMultiplier = 1.5f;
@@ -41,6 +47,7 @@ public class GameUnit : MonoBehaviour
     public int CurrentMorale => currentMorale;
     public int CurrentAmmo => currentAmmo;
     public UnitStats Stats => stats;
+    public string DisplayName => stats != null && !string.IsNullOrWhiteSpace(stats.unitName) ? stats.unitName : name;
     public IReadOnlyList<PlannedCommand> PlannedCommands => plannedCommands;
     public bool IsDead => currentSize <= 0;
     public bool IsBroken { get; private set; }
@@ -89,7 +96,7 @@ public class GameUnit : MonoBehaviour
             selectionRing.SetActive(false);
 
         if (brokenOverlay != null)
-        brokenOverlay.SetActive(false);
+            brokenOverlay.SetActive(false);
     }
 
     private void Start()
@@ -104,20 +111,20 @@ public class GameUnit : MonoBehaviour
         SnapToGrid(startPos);
     }
 
-        public void BeginTurnExecution()
+    public void BeginTurnExecution()
+    {
+        if (IsDead || isBeingRemoved)
+            return;
+
+        actedThisTurn = false;
+        tookDamageThisTurn = false;
+
+        if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
         {
-            if (IsDead || isBeingRemoved)
-                return;
-
-            actedThisTurn = false;
-            tookDamageThisTurn = false;
-
-            if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
-            {
-                Debug.Log($"{name} routed off the battlefield.");
-                Die(UnitRemovalReason.Routed);
-            }
+            Debug.Log($"{name} routed off the battlefield.");
+            Die(UnitRemovalReason.Routed);
         }
+    }
 
     public void ResolveTurnEnd()
     {
@@ -130,9 +137,7 @@ public class GameUnit : MonoBehaviour
             recovery += stats.idleMoraleRecoveryBonus;
 
         if (recovery > 0)
-        {
             currentMorale = Mathf.Clamp(currentMorale + recovery, 0, stats.maxMorale);
-        }
 
         if (IsBroken && currentMorale >= stats.brokenMoraleThreshold)
         {
@@ -275,16 +280,29 @@ public class GameUnit : MonoBehaviour
             return;
         }
 
-        Vector2Int startGrid = GridPosition;
-        Vector2Int resolvedTarget = grid.ResolveMoveDestination(this, GridPosition, desiredTargetGrid);
-
-        if (resolvedTarget == GridPosition)
+        if (!grid.IsInside(desiredTargetGrid))
         {
             onComplete?.Invoke();
             return;
         }
 
-        if (!grid.MoveUnit(this, GridPosition, resolvedTarget))
+        if (!grid.IsWalkable(desiredTargetGrid))
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        GameUnit unitAtTarget = grid.GetUnitAt(desiredTargetGrid);
+        if (unitAtTarget != null && unitAtTarget != this)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        GridPathfinder pathfinder = new GridPathfinder(grid);
+        List<Vector2Int> path = pathfinder.FindPath(GridPosition, desiredTargetGrid, this);
+
+        if (path == null || path.Count == 0)
         {
             onComplete?.Invoke();
             return;
@@ -297,43 +315,7 @@ public class GameUnit : MonoBehaviour
         }
 
         actedThisTurn = true;
-        _moveRoutine = StartCoroutine(MoveRoutine(startGrid, resolvedTarget, onComplete));
-    }
-
-    private IEnumerator MoveRoutine(Vector2Int startGrid, Vector2Int targetGrid, Action onComplete)
-    {
-        Vector3 start = transform.position;
-        Vector3 end = new Vector3(targetGrid.x, targetGrid.y, 0f);
-
-        if (startGrid == targetGrid)
-        {
-            GridPosition = targetGrid;
-            _moveRoutine = null;
-            onComplete?.Invoke();
-            yield break;
-        }
-
-        float movementCost = grid != null
-            ? Mathf.Max(1f, grid.GetTravelCostAlongLine(this, startGrid, targetGrid))
-            : Vector3.Distance(start, end);
-
-        float duration = movementCost / GetCurrentMoveSpeed();
-        duration = Mathf.Max(0.01f, duration);
-
-        float t = 0f;
-
-        while (t < 1f)
-        {
-            t += Time.deltaTime / duration;
-            transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(t));
-            yield return null;
-        }
-
-        transform.position = end;
-        GridPosition = targetGrid;
-        _moveRoutine = null;
-
-        onComplete?.Invoke();
+        _moveRoutine = StartCoroutine(FollowPath(path, onComplete));
     }
 
     public bool IsAdjacentTo(GameUnit target)
@@ -348,23 +330,15 @@ public class GameUnit : MonoBehaviour
     {
         if (grid == null) return false;
 
-        Vector2Int[] neighbours = grid.GetNeighbours4(GridPosition);
-
-        for (int i = 0; i < neighbours.Length; i++)
-        {
-            GameUnit other = grid.GetUnitAt(neighbours[i]);
-            if (other != null && other.TeamId != TeamId)
-                return true;
-        }
-
-        return false;
+        List<GameUnit> enemies = grid.GetAdjacentEnemies(this);
+        return enemies.Count > 0;
     }
 
     public void AttackMelee(GameUnit target)
     {
-        if (currentOrder == OrderType.Retreat || IsBroken || isBeingRemoved)
+        if (!CanPerformMelee())
         {
-            Debug.Log($"{name} cannot attack in melee while retreating or broken.");
+            Debug.Log($"{name} cannot attack in melee while retreating, broken or removed.");
             return;
         }
 
@@ -375,7 +349,59 @@ public class GameUnit : MonoBehaviour
 
         int rawDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier());
         actedThisTurn = true;
+
         target.TakeMeleeDamage(this, rawDamage);
+    }
+
+    public void ResolveAutoMeleeCombat()
+    {
+        if (!CanPerformMelee())
+            return;
+
+        if (stats == null || !stats.canAutoMelee)
+            return;
+
+        if (grid == null)
+            return;
+
+        List<GameUnit> enemies = grid.GetAdjacentEnemies(this);
+
+        if (enemies.Count == 0)
+            return;
+
+        int rawTotalDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier() * stats.autoMeleeDamageMultiplier);
+
+        if (rawTotalDamage <= 0)
+            return;
+
+        int damagePerTarget = Mathf.Max(1, Mathf.RoundToInt((float)rawTotalDamage / enemies.Count));
+
+        actedThisTurn = true;
+
+        Debug.Log($"{name} auto melee: targets={enemies.Count}, totalRaw={rawTotalDamage}, perTargetRaw={damagePerTarget}");
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            GameUnit enemy = enemies[i];
+
+            if (enemy == null) continue;
+            if (enemy.IsDead) continue;
+            if (enemy.TeamId == TeamId) continue;
+            if (!IsAdjacentTo(enemy)) continue;
+
+            enemy.TakeMeleeDamage(this, damagePerTarget);
+        }
+    }
+
+    private bool CanPerformMelee()
+    {
+        if (isBeingRemoved) return false;
+        if (IsDead) return false;
+        if (IsBroken) return false;
+        if (currentOrder == OrderType.Retreat) return false;
+        if (stats == null) return false;
+
+        return true;
     }
 
     public void Shoot(GameUnit target)
@@ -527,9 +553,7 @@ public class GameUnit : MonoBehaviour
     private int ApplyTerrainDefenseToRangedDamage(int baseDamage)
     {
         if (grid != null && grid.IsForestAt(GridPosition))
-        {
             return Mathf.Max(0, Mathf.RoundToInt(baseDamage * forestRangedDamageMultiplier));
-        }
 
         return Mathf.Max(0, baseDamage);
     }
@@ -543,9 +567,7 @@ public class GameUnit : MonoBehaviour
         if (grid != null && stats != null)
             cohesionModifier = grid.GetMoraleCohesionModifier(this);
 
-        int moraleLoss = Mathf.RoundToInt(
-            finalDamage * stats.moraleDamagePerLostUnit * cohesionModifier
-        );
+        int moraleLoss = Mathf.RoundToInt(finalDamage * stats.moraleDamagePerLostUnit * cohesionModifier);
 
         currentMorale = Mathf.Max(0, currentMorale - moraleLoss);
 
@@ -559,7 +581,7 @@ public class GameUnit : MonoBehaviour
             BreakUnit();
     }
 
-        private void BreakUnit()
+    private void BreakUnit()
     {
         IsBroken = true;
         currentOrder = OrderType.Retreat;
@@ -863,5 +885,53 @@ public class GameUnit : MonoBehaviour
         }
 
         return result;
+    }
+
+    private IEnumerator FollowPath(List<Vector2Int> path, Action onComplete)
+    {
+        int movementBudget = grid.GetMovementBudgetForUnit(this);
+        int spent = 0;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            if (stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
+                break;
+
+            Vector2Int target = path[i];
+            int stepCost = grid.GetMovementCost(GridPosition, target, this);
+
+            if (stepCost == int.MaxValue)
+                break;
+
+            if (spent + stepCost > movementBudget)
+                break;
+
+            if (!grid.MoveUnit(this, GridPosition, target))
+                break;
+
+            spent += stepCost;
+
+            Vector3 start = transform.position;
+            Vector3 end = new Vector3(target.x, target.y, 0f);
+
+            float duration = Mathf.Max(0.01f, stepCost / GetCurrentMoveSpeed());
+            float t = 0f;
+
+            while (t < 1f)
+            {
+                t += Time.deltaTime / duration;
+                transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(t));
+                yield return null;
+            }
+
+            transform.position = end;
+            GridPosition = target;
+
+            if (stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
+                break;
+        }
+
+        _moveRoutine = null;
+        onComplete?.Invoke();
     }
 }

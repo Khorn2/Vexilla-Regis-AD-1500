@@ -162,6 +162,35 @@ public class GridManager : MonoBehaviour
         };
     }
 
+    public List<GameUnit> GetAdjacentEnemies(GameUnit unit)
+    {
+        List<GameUnit> result = new List<GameUnit>();
+
+        if (unit == null)
+            return result;
+
+        Vector2Int[] neighbours = GetNeighbours4(unit.GridPosition);
+
+        for (int i = 0; i < neighbours.Length; i++)
+        {
+            Vector2Int n = neighbours[i];
+
+            if (!IsInside(n))
+                continue;
+
+            GameUnit other = GetUnitAt(n);
+
+            if (other == null) continue;
+            if (other == unit) continue;
+            if (other.IsDead) continue;
+            if (other.TeamId == unit.TeamId) continue;
+
+            result.Add(other);
+        }
+
+        return result;
+    }
+
     public bool IsWalkable(Vector2Int pos)
     {
         if (!IsInside(pos))
@@ -255,9 +284,7 @@ public class GridManager : MonoBehaviour
         }
 
         if (topDist < minDist)
-        {
             best = new Vector2Int(from.x, height - 1);
-        }
 
         return best;
     }
@@ -289,23 +316,23 @@ public class GridManager : MonoBehaviour
     }
 
     public float GetMoraleCohesionModifier(GameUnit unit)
-{
-    if (unit == null || unit.Stats == null)
-        return 1f;
+    {
+        if (unit == null || unit.Stats == null)
+            return 1f;
 
-    int nearestAllyDistance = GetNearestAllyManhattanDistance(unit, unit.Stats.moraleSupportRadius);
+        int nearestAllyDistance = GetNearestAllyManhattanDistance(unit, unit.Stats.moraleSupportRadius);
 
-    if (nearestAllyDistance == 1)
-        return unit.Stats.adjacentAllyMoraleLossMultiplier;
+        if (nearestAllyDistance == 1)
+            return unit.Stats.adjacentAllyMoraleLossMultiplier;
 
-    if (nearestAllyDistance == 2)
-        return unit.Stats.nearbyAllyMoraleLossMultiplier;
+        if (nearestAllyDistance == 2)
+            return unit.Stats.nearbyAllyMoraleLossMultiplier;
 
-    if (nearestAllyDistance == 3)
-        return unit.Stats.normalMoraleLossMultiplier;
+        if (nearestAllyDistance == 3)
+            return unit.Stats.normalMoraleLossMultiplier;
 
-    return unit.Stats.isolatedMoraleLossMultiplier;
-}
+        return unit.Stats.isolatedMoraleLossMultiplier;
+    }
 
     private int GetNearestAllyManhattanDistance(GameUnit unit, int maxRadius)
     {

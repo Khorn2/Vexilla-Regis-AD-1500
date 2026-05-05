@@ -3,9 +3,13 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Vexilla/Unit Stats")]
 public class UnitStats : ScriptableObject
 {
+    [Header("Identity")]
+    public string unitName = "Unnamed Unit";
+
     [Header("Movement")]
     [Min(1)] public int movementRange = 4;
     [Min(0.1f)] public float moveSpeedTilesPerSec = 4f;
+    public bool stopMovementOnEnemyContact = true;
 
     [Header("Unit Size")]
     [Min(1)] public int unitSize = 100;
@@ -14,6 +18,10 @@ public class UnitStats : ScriptableObject
     [Min(0)] public int meleeDamage = 10;
     [Min(0)] public int rangedDamage = 8;
     [Min(0)] public int shootRange = 4;
+
+    [Header("Auto Melee")]
+    public bool canAutoMelee = true;
+    [Range(0f, 2f)] public float autoMeleeDamageMultiplier = 1f;
 
     [Header("Morale")]
     [Min(1)] public int maxMorale = 100;

@@ -12,12 +12,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
   m_Name: TestShooter
   m_EditorClassIdentifier: 
+  unitName: Test Shooter
   movementRange: 4
   moveSpeedTilesPerSec: 4
+  stopMovementOnEnemyContact: 1
   unitSize: 100
   meleeDamage: 4
   rangedDamage: 10
   shootRange: 5
+  canAutoMelee: 1
+  autoMeleeDamageMultiplier: 1
+  maxMorale: 100
+  lowMoraleThreshold: 50
+  brokenMoraleThreshold: 15
+  lowMoraleDamageMultiplier: 0.8
+  moraleDamagePerLostUnit: 2
+  passiveMoraleRecovery: 4
+  idleMoraleRecoveryBonus: 6
+  moraleSupportRadius: 3
+  adjacentAllyMoraleLossMultiplier: 0.75
+  nearbyAllyMoraleLossMultiplier: 0.9
+  normalMoraleLossMultiplier: 1
+  isolatedMoraleLossMultiplier: 1.35
+  armorPercent: 0.2
+  maxAmmo: 100
+  ammoPerShot: 10
   canCharge: 1
   canShoot: 1
   allowFriendlyFireThroughAlly: 1
