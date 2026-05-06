@@ -12,23 +12,31 @@ public class Tile : MonoBehaviour
     [SerializeField, Range(1, 6)] private int _heightLevel = 1;
 
     [Header("Base Colors")]
-    [SerializeField] private Color _plainBaseColor = new Color(0.63f, 0.85f, 0.45f);
-    [SerializeField] private Color _plainOffsetColor = new Color(0.58f, 0.80f, 0.40f);
+    [SerializeField] private Color _plainBaseColor = new Color(0.78f, 0.92f, 0.58f, 1f);
+    [SerializeField] private Color _plainOffsetColor = new Color(0.76f, 0.90f, 0.56f, 1f);
 
     [Header("Terrain Debug Colors")]
-    [SerializeField] private Color _forestColor = new Color(0.16f, 0.42f, 0.18f);
-    [SerializeField] private Color _shallowWaterColor = new Color(0.45f, 0.78f, 0.95f);
-    [SerializeField] private Color _deepWaterColor = new Color(0.10f, 0.26f, 0.60f);
-    [SerializeField] private Color _roadColor = new Color(0.76f, 0.68f, 0.40f);
-    [SerializeField] private Color _roughTerrainColor = new Color(0.48f, 0.50f, 0.30f);
+    [SerializeField] private Color _forestColor = new Color(0.16f, 0.42f, 0.18f, 1f);
+    [SerializeField] private Color _shallowWaterColor = new Color(0.45f, 0.78f, 0.95f, 1f);
+    [SerializeField] private Color _deepWaterColor = new Color(0.10f, 0.26f, 0.60f, 1f);
+    [SerializeField] private Color _roadColor = new Color(0.76f, 0.68f, 0.40f, 1f);
+    [SerializeField] private Color _roughTerrainColor = new Color(0.48f, 0.50f, 0.30f, 1f);
 
-    [Header("Height Tint")]
-    [SerializeField, Range(0f, 1f)] private float _offsetTintStrength = 0.06f;
-    [SerializeField, Range(0f, 1f)] private float _heightDarkenPerLevel = 0.12f;
-    [SerializeField, Range(0f, 1f)] private float _heightDesaturatePerLevel = 0.18f;
+    [Header("Visual Rules")]
+    [SerializeField] private bool useOffsetTint = false;
+    [SerializeField] private bool useHeightTintOnPlainTiles = false;
+    [SerializeField] private bool useDebugColorsWhenNoSprite = true;
+    [SerializeField, Range(0f, 1f)] private float _offsetTintStrength = 0.02f;
+    [SerializeField, Range(0f, 1f)] private float _heightDarkenPerLevel = 0.04f;
+    [SerializeField, Range(0f, 1f)] private float _heightDesaturatePerLevel = 0.04f;
+
+    [Header("Highlight")]
+    [SerializeField] private Color _rangeHighlightColor = new Color(1f, 0.95f, 0.25f, 1f);
+    [SerializeField, Range(0f, 1f)] private float _rangeHighlightStrength = 0.35f;
 
     private bool _isOffset;
     private Color _originalColor;
+    private Sprite _baseSprite;
 
     public TerrainType TerrainType => _terrainType;
     public int HeightLevel => _heightLevel;
@@ -37,7 +45,17 @@ public class Tile : MonoBehaviour
     public void Init(bool isOffset)
     {
         _isOffset = isOffset;
+
+        if (_renderer != null && _baseSprite == null)
+            _baseSprite = _renderer.sprite;
+
         RefreshVisual();
+    }
+
+    private void Awake()
+    {
+        if (_renderer != null && _baseSprite == null)
+            _baseSprite = _renderer.sprite;
     }
 
     private void OnMouseEnter()
@@ -57,10 +75,9 @@ public class Tile : MonoBehaviour
         if (_renderer == null)
             return;
 
-        if (active)
-            _renderer.color = Color.Lerp(_originalColor, Color.yellow, 0.35f);
-        else
-            _renderer.color = _originalColor;
+        _renderer.color = active
+            ? Color.Lerp(_originalColor, _rangeHighlightColor, _rangeHighlightStrength)
+            : _originalColor;
     }
 
     public void SetTerrain(TerrainType terrainType, int heightLevel)
@@ -125,47 +142,64 @@ public class Tile : MonoBehaviour
             return;
 
         if (_terrainSpriteOverride != null)
+        {
             _renderer.sprite = _terrainSpriteOverride;
+            _renderer.color = Color.white;
+            _originalColor = Color.white;
+            return;
+        }
 
-        Color targetColor = GetDebugColor();
+        if (_baseSprite != null)
+            _renderer.sprite = _baseSprite;
+
+        Color targetColor = GetTileColorWithoutSprite();
         _renderer.color = targetColor;
         _originalColor = targetColor;
     }
 
-    private Color GetDebugColor()
+    private Color GetTileColorWithoutSprite()
     {
         Color color;
 
-        switch (_terrainType)
+        if (useDebugColorsWhenNoSprite)
         {
-            case TerrainType.Forest:
-                color = _forestColor;
-                break;
+            switch (_terrainType)
+            {
+                case TerrainType.Forest:
+                    color = _forestColor;
+                    break;
 
-            case TerrainType.ShallowWater:
-                color = _shallowWaterColor;
-                break;
+                case TerrainType.ShallowWater:
+                    color = _shallowWaterColor;
+                    break;
 
-            case TerrainType.DeepWater:
-                color = _deepWaterColor;
-                break;
+                case TerrainType.DeepWater:
+                    color = _deepWaterColor;
+                    break;
 
-            case TerrainType.Road:
-                color = _roadColor;
-                break;
+                case TerrainType.Road:
+                    color = _roadColor;
+                    break;
 
-            case TerrainType.RoughTerrain:
-                color = _roughTerrainColor;
-                break;
+                case TerrainType.RoughTerrain:
+                    color = _roughTerrainColor;
+                    break;
 
-            case TerrainType.Plain:
-            default:
-                color = _isOffset ? _plainOffsetColor : _plainBaseColor;
-                color = ApplyHeightTint(color, _heightLevel);
-                break;
+                case TerrainType.Plain:
+                default:
+                    color = _isOffset ? _plainOffsetColor : _plainBaseColor;
+                    break;
+            }
+        }
+        else
+        {
+            color = _isOffset ? _plainOffsetColor : _plainBaseColor;
         }
 
-        if (_terrainType != TerrainType.Plain && _isOffset)
+        if (_terrainType == TerrainType.Plain && useHeightTintOnPlainTiles)
+            color = ApplyHeightTint(color, _heightLevel);
+
+        if (useOffsetTint && _isOffset)
             color = Color.Lerp(color, Color.black, _offsetTintStrength);
 
         return color;

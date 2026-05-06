@@ -23,18 +23,17 @@ public class OrderBarUI : MonoBehaviour
     [SerializeField] private Image retreatButtonImage;
     [SerializeField] private Image endTurnButtonImage;
 
-    [Header("Colors")]
-    [SerializeField] private Color enabledColor = new Color(0.25f, 0.25f, 0.25f, 1f);
-    [SerializeField] private Color disabledColor = new Color(0.10f, 0.10f, 0.10f, 0.65f);
-    [SerializeField] private Color selectedColor = new Color(0.20f, 0.45f, 0.90f, 1f);
-    [SerializeField] private Color endTurnColor = new Color(0.35f, 0.25f, 0.10f, 1f);
-
-    [Header("Future Sprites")]
+    [Header("Sprites")]
     [SerializeField] private Sprite marchSprite;
     [SerializeField] private Sprite chargeSprite;
     [SerializeField] private Sprite shootSprite;
     [SerializeField] private Sprite retreatSprite;
     [SerializeField] private Sprite endTurnSprite;
+
+    [Header("Visual Settings")]
+    [SerializeField] private Color normalIconColor = Color.white;
+    [SerializeField] private Color disabledIconColor = new Color(1f, 1f, 1f, 0.25f);
+    [SerializeField] private bool hideOrderIconsWhenNoSelection = true;
 
     private void Awake()
     {
@@ -72,6 +71,21 @@ public class OrderBarUI : MonoBehaviour
 
     private void OnDisable()
     {
+        if (marchButton != null)
+            marchButton.onClick.RemoveAllListeners();
+
+        if (chargeButton != null)
+            chargeButton.onClick.RemoveAllListeners();
+
+        if (shootButton != null)
+            shootButton.onClick.RemoveAllListeners();
+
+        if (retreatButton != null)
+            retreatButton.onClick.RemoveAllListeners();
+
+        if (endTurnButton != null)
+            endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
+
         if (turnManager != null)
             turnManager.OnTurnStateChanged -= Refresh;
     }
@@ -108,18 +122,18 @@ public class OrderBarUI : MonoBehaviour
         bool battleEnded = turnManager != null && turnManager.IsBattleEnded;
         bool hasSelection = selectionManager != null && selectionManager.HasSelection;
 
-        bool ordersEnabled = planning && !battleEnded && hasSelection;
+        bool ordersBaseEnabled = planning && !battleEnded && hasSelection;
         bool endTurnEnabled = planning && !battleEnded;
 
-        RefreshOrder(marchButton, marchButtonImage, OrderType.March, ordersEnabled);
-        RefreshOrder(chargeButton, chargeButtonImage, OrderType.Charge, ordersEnabled);
-        RefreshOrder(shootButton, shootButtonImage, OrderType.Shoot, ordersEnabled);
-        RefreshOrder(retreatButton, retreatButtonImage, OrderType.Retreat, ordersEnabled);
+        RefreshOrder(marchButton, marchButtonImage, OrderType.March, ordersBaseEnabled, hasSelection);
+        RefreshOrder(chargeButton, chargeButtonImage, OrderType.Charge, ordersBaseEnabled, hasSelection);
+        RefreshOrder(shootButton, shootButtonImage, OrderType.Shoot, ordersBaseEnabled, hasSelection);
+        RefreshOrder(retreatButton, retreatButtonImage, OrderType.Retreat, ordersBaseEnabled, hasSelection);
 
         RefreshEndTurn(endTurnEnabled);
     }
 
-    private void RefreshOrder(Button button, Image image, OrderType order, bool baseEnabled)
+    private void RefreshOrder(Button button, Image image, OrderType order, bool baseEnabled, bool hasSelection)
     {
         bool canUse = baseEnabled;
 
@@ -132,21 +146,16 @@ public class OrderBarUI : MonoBehaviour
         if (image == null)
             return;
 
-        GameUnit selected = selectionManager != null ? selectionManager.Selected : null;
+        image.preserveAspect = true;
 
-        if (!canUse)
+        if (!hasSelection && hideOrderIconsWhenNoSelection)
         {
-            image.color = disabledColor;
+            image.enabled = false;
             return;
         }
 
-        if (selected != null && selected.CurrentOrder == order)
-        {
-            image.color = selectedColor;
-            return;
-        }
-
-        image.color = enabledColor;
+        image.enabled = true;
+        image.color = canUse ? normalIconColor : disabledIconColor;
     }
 
     private void RefreshEndTurn(bool enabled)
@@ -154,8 +163,12 @@ public class OrderBarUI : MonoBehaviour
         if (endTurnButton != null)
             endTurnButton.interactable = enabled;
 
-        if (endTurnButtonImage != null)
-            endTurnButtonImage.color = enabled ? endTurnColor : disabledColor;
+        if (endTurnButtonImage == null)
+            return;
+
+        endTurnButtonImage.enabled = true;
+        endTurnButtonImage.preserveAspect = true;
+        endTurnButtonImage.color = enabled ? normalIconColor : disabledIconColor;
     }
 
     private void AutoAssignImages()
@@ -185,10 +198,14 @@ public class OrderBarUI : MonoBehaviour
         ApplySprite(endTurnButtonImage, endTurnSprite);
     }
 
-    private void ApplySprite(Image img, Sprite sprite)
+    private void ApplySprite(Image image, Sprite sprite)
     {
-        if (img != null && sprite != null)
-            img.sprite = sprite;
+        if (image == null || sprite == null)
+            return;
+
+        image.sprite = sprite;
+        image.color = normalIconColor;
+        image.preserveAspect = true;
     }
 
     private void DisableButtonTransitions()
@@ -200,9 +217,9 @@ public class OrderBarUI : MonoBehaviour
         DisableTransition(endTurnButton);
     }
 
-    private void DisableTransition(Button btn)
+    private void DisableTransition(Button button)
     {
-        if (btn != null)
-            btn.transition = Selectable.Transition.None;
+        if (button != null)
+            button.transition = Selectable.Transition.None;
     }
 }

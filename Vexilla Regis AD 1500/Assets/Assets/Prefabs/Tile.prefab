@@ -183,10 +183,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 139b561b8e1fd084aad7af089e3e63e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseColor: {r: 0.3088232, g: 0.5566038, b: 0.16015485, a: 1}
-  _offsetColor: {r: 0.29669484, g: 0.5283019, b: 0.15699537, a: 1}
   _renderer: {fileID: 8121048276816692845}
   _highlight: {fileID: 4929585901495198551}
+  _terrainSpriteOverride: {fileID: 0}
+  _terrainType: 0
+  _heightLevel: 1
+  _plainBaseColor: {r: 0.78, g: 0.92, b: 0.58, a: 1}
+  _plainOffsetColor: {r: 0.76, g: 0.9, b: 0.56, a: 1}
+  _forestColor: {r: 0.16, g: 0.42, b: 0.18, a: 1}
+  _shallowWaterColor: {r: 0.45, g: 0.78, b: 0.95, a: 1}
+  _deepWaterColor: {r: 0.1, g: 0.26, b: 0.6, a: 1}
+  _roadColor: {r: 0.76, g: 0.68, b: 0.4, a: 1}
+  _roughTerrainColor: {r: 0.48, g: 0.5, b: 0.3, a: 1}
+  useOffsetTint: 0
+  useHeightTintOnPlainTiles: 0
+  useDebugColorsWhenNoSprite: 1
+  _offsetTintStrength: 0.02
+  _heightDarkenPerLevel: 0.04
+  _heightDesaturatePerLevel: 0.04
+  _rangeHighlightColor: {r: 1, g: 0.95, b: 0.25, a: 1}
+  _rangeHighlightStrength: 0.35
 --- !u!61 &1407292293138263136
 BoxCollider2D:
   m_ObjectHideFlags: 0
