@@ -22,8 +22,14 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button optionsBackButton;
     [SerializeField] private Button creditsBackButton;
 
+    [Header("References")]
+    [SerializeField] private OptionsMenuUI optionsMenuUI;
+
     private void Awake()
     {
+        if (optionsMenuUI == null)
+            optionsMenuUI = GetComponent<OptionsMenuUI>();
+
         ShowMainPanel();
     }
 
@@ -91,11 +97,14 @@ public class MainMenuUI : MonoBehaviour
         if (mainPanel != null)
             mainPanel.SetActive(false);
 
+        if (creditsPanel != null)
+            creditsPanel.SetActive(false);
+
         if (optionsPanel != null)
             optionsPanel.SetActive(true);
 
-        if (creditsPanel != null)
-            creditsPanel.SetActive(false);
+        if (optionsMenuUI != null)
+            optionsMenuUI.OpenOptions();
     }
 
     private void ShowCreditsPanel()
