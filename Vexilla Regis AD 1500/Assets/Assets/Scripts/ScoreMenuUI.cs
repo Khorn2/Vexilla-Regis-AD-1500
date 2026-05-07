@@ -133,16 +133,8 @@ public class ScoreMenuUI : MonoBehaviour
             if (record.teamId != teamId)
                 continue;
 
-            string status = "AKTYWNA";
-
-            if (record.UnitLost)
-                status = "ZNISZCZONA";
-            else if (record.UnitRouted)
-                status = "UCIEKŁA";
-
             sb.AppendLine(record.unitName);
             sb.AppendLine($"  Straty: {record.MenLost}/{record.initialSize}");
-            sb.AppendLine($"  Status: {status}");
             sb.AppendLine();
         }
     }

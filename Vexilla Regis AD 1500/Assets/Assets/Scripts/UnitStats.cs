@@ -19,6 +19,11 @@ public class UnitStats : ScriptableObject
     [Min(0)] public int rangedDamage = 8;
     [Min(0)] public int shootRange = 4;
 
+    [Header("Charge Impact")]
+    [Min(0f)] public float chargeImpactPerTile = 2f;
+    [Min(0)] public int maxChargeBonus = 20;
+    [Min(0)] public int minTilesForChargeBonus = 2;
+
     [Header("Auto Melee")]
     public bool canAutoMelee = true;
     [Range(0f, 2f)] public float autoMeleeDamageMultiplier = 1f;

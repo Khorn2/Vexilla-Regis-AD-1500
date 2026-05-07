@@ -61,6 +61,7 @@ public class GameUnit : MonoBehaviour
     private int currentSize;
     private int currentMorale;
     private int currentAmmo;
+    private int tilesMovedThisTurn;
     private bool tookDamageThisTurn;
     private bool actedThisTurn;
     private bool isBeingRemoved;
@@ -116,6 +117,7 @@ public class GameUnit : MonoBehaviour
         if (IsDead || isBeingRemoved)
             return;
 
+        tilesMovedThisTurn = 0;
         actedThisTurn = false;
         tookDamageThisTurn = false;
 
@@ -347,7 +349,7 @@ public class GameUnit : MonoBehaviour
         if (target.TeamId == TeamId) return;
         if (!IsAdjacentTo(target)) return;
 
-        int rawDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier());
+        int rawDamage = CalculateMeleeRawDamage();
         actedThisTurn = true;
 
         target.TakeMeleeDamage(this, rawDamage);
@@ -391,6 +393,25 @@ public class GameUnit : MonoBehaviour
 
             enemy.TakeMeleeDamage(this, damagePerTarget);
         }
+    }
+
+    private int CalculateMeleeRawDamage()
+    {
+        int baseDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier());
+        int chargeBonus = 0;
+
+        if (currentOrder == OrderType.Charge && tilesMovedThisTurn >= stats.minTilesForChargeBonus)
+        {
+            chargeBonus = Mathf.RoundToInt(tilesMovedThisTurn * stats.chargeImpactPerTile);
+            chargeBonus = Mathf.Min(chargeBonus, stats.maxChargeBonus);
+        }
+
+        int rawDamage = baseDamage + chargeBonus;
+
+        if (chargeBonus > 0)
+            Debug.Log($"{name} charge impact: moved={tilesMovedThisTurn}, bonus={chargeBonus}, rawDamage={rawDamage}");
+
+        return Mathf.Max(0, rawDamage);
     }
 
     private bool CanPerformMelee()
@@ -910,6 +931,7 @@ public class GameUnit : MonoBehaviour
                 break;
 
             spent += stepCost;
+            tilesMovedThisTurn++;
 
             Vector3 start = transform.position;
             Vector3 end = new Vector3(target.x, target.y, 0f);
