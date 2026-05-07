@@ -68,10 +68,12 @@
     <Compile Include="Assets\Assets\Scripts\SelectionManager2D.cs" />
     <Compile Include="Assets\Assets\Scripts\GridManager.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderBarUI.cs" />
+    <Compile Include="Assets\Assets\Scripts\GameSettingsManager.cs" />
     <Compile Include="Assets\Assets\Scripts\UIManager.cs" />
     <Compile Include="Assets\Assets\Scripts\ScoreMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\PlannedCommand.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderType.cs" />
+    <Compile Include="Assets\Assets\Scripts\GameplayOptionsMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\BattleStatsTracker.cs" />
     <Compile Include="Assets\Assets\Scripts\TurnManager.cs" />
     <Compile Include="Assets\Assets\Scripts\TerrainType.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="Assets\Assets\Scripts\GameUnit.cs" />
     <Compile Include="Assets\Assets\Scripts\UnitNameTooltipUI.cs" />
     <Compile Include="Assets\Assets\Scripts\MainMenuUI.cs" />
+    <Compile Include="Assets\Assets\Scripts\OptionsMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\TestScenarioSpawner.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />
     <Compile Include="Assets\Assets\Scripts\CommandPreviewRenderer.cs" />

@@ -22,8 +22,22 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.H))
+        if (IsKeyDown("ToggleHealthBars", KeyCode.H))
             ToggleUnitBars();
+    }
+
+    private bool IsKeyDown(string actionId, KeyCode fallback)
+    {
+        KeyCode key = GetConfiguredKey(actionId, fallback);
+        return key != KeyCode.None && Input.GetKeyDown(key);
+    }
+
+    private KeyCode GetConfiguredKey(string actionId, KeyCode fallback)
+    {
+        if (GameSettingsManager.Instance != null)
+            return GameSettingsManager.Instance.GetKey(actionId);
+
+        return fallback;
     }
 
     public void ToggleUnitBars()

@@ -67,4 +67,16 @@ public class BattleResultChecker : MonoBehaviour
         if (turnManager != null)
             turnManager.EndBattleDraw();
     }
+
+        public void ForcePlayerDefeat()
+    {
+        if (battleEnded) return;
+
+        battleEnded = true;
+        Debug.Log("Porażka");
+
+        TurnManager turnManager = FindFirstObjectByType<TurnManager>();
+        if (turnManager != null)
+            turnManager.EndBattle(false);
+    }
 }

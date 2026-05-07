@@ -51,8 +51,22 @@ public class TurnManager : MonoBehaviour
         if (!IsPlanningPhase)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (IsKeyDown("EndTurn", KeyCode.Return))
             RequestEndTurn();
+    }
+
+    private bool IsKeyDown(string actionId, KeyCode fallback)
+    {
+        KeyCode key = GetConfiguredKey(actionId, fallback);
+        return key != KeyCode.None && Input.GetKeyDown(key);
+    }
+
+    private KeyCode GetConfiguredKey(string actionId, KeyCode fallback)
+    {
+        if (GameSettingsManager.Instance != null)
+            return GameSettingsManager.Instance.GetKey(actionId);
+
+        return fallback;
     }
 
     public void RequestEndTurn()
@@ -238,6 +252,14 @@ public class TurnManager : MonoBehaviour
 
             unit.ResolveAutoMeleeCombat();
         }
+    }
+
+    public void SurrenderBattle()
+    {
+        if (IsBattleEnded)
+            return;
+
+        EndBattle(false);
     }
 
     private void OnDisable()

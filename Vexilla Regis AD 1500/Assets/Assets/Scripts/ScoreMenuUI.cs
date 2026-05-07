@@ -193,8 +193,8 @@ public class ScoreMenuUI : MonoBehaviour
         }
     }
 
-    private void OnMainMenuClicked()
-    {
-        Debug.Log("Main Menu button clicked - logic not implemented yet.");
-    }
+        private void OnMainMenuClicked()
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        }
 }

@@ -76,6 +76,26 @@ public class SelectionManager2D : MonoBehaviour
         UpdateRangeHighlight();
     }
 
+    private KeyCode GetConfiguredKey(string actionId, KeyCode fallback)
+    {
+        if (GameSettingsManager.Instance != null)
+            return GameSettingsManager.Instance.GetKey(actionId);
+
+        return fallback;
+    }
+
+    private bool IsKeyDown(string actionId, KeyCode fallback)
+    {
+        KeyCode key = GetConfiguredKey(actionId, fallback);
+        return key != KeyCode.None && Input.GetKeyDown(key);
+    }
+
+    private bool IsKeyHeld(string actionId, KeyCode fallback)
+    {
+        KeyCode key = GetConfiguredKey(actionId, fallback);
+        return key != KeyCode.None && Input.GetKey(key);
+    }
+
     public void ApplyOrderFromUI(OrderType order)
     {
         if (turnManager != null && turnManager.IsBattleEnded) return;
@@ -154,16 +174,26 @@ public class SelectionManager2D : MonoBehaviour
 
         if (leftMouseDown && Input.GetMouseButtonUp(0))
         {
-            bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            bool additive = IsSelectionAdditiveHeld();
 
             if (isBoxSelecting)
-                FinishBoxSelection(shift);
+                FinishBoxSelection(additive);
             else
-                HandleSingleClickSelection(shift);
+                HandleSingleClickSelection(additive);
 
             leftMouseDown = false;
             isBoxSelecting = false;
         }
+    }
+
+    private bool IsSelectionAdditiveHeld()
+    {
+        KeyCode configured = GetConfiguredKey("SelectionAdditive", KeyCode.None);
+
+        if (configured != KeyCode.None)
+            return Input.GetKey(configured);
+
+        return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
     }
 
     private void HandleSingleClickSelection(bool additive)
@@ -435,7 +465,7 @@ public class SelectionManager2D : MonoBehaviour
 
     private bool IsAppendQueueHeld()
     {
-        return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        return IsKeyHeld("AppendQueue", KeyCode.LeftControl);
     }
 
     private GameUnit GetPlayerUnitUnderMouse()
@@ -477,16 +507,16 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded) return;
         if (selectedUnits.Count == 0) return;
 
-        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+        if (IsKeyDown("OrderMarch", KeyCode.Alpha1))
             SetOrderForSelection(OrderType.March);
 
-        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+        if (IsKeyDown("OrderCharge", KeyCode.Alpha2))
             SetOrderForSelection(OrderType.Charge);
 
-        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+        if (IsKeyDown("OrderShoot", KeyCode.Alpha3))
             SetOrderForSelection(OrderType.Shoot);
 
-        if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+        if (IsKeyDown("OrderRetreat", KeyCode.Alpha4))
             TrySetManualRetreat();
     }
 
@@ -541,7 +571,7 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded) return;
         if (selectedUnits.Count == 0) return;
 
-        if (Input.GetKeyDown(KeyCode.Delete))
+        if (IsKeyDown("ClearOrders", KeyCode.Delete))
         {
             for (int i = 0; i < selectedUnits.Count; i++)
             {

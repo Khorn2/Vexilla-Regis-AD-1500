@@ -71,12 +71,6 @@ public class MainMenuUI : MonoBehaviour
 
     private void PlayGame()
     {
-        if (string.IsNullOrWhiteSpace(gameplaySceneName))
-        {
-            Debug.LogError("MainMenuUI: gameplaySceneName is empty.");
-            return;
-        }
-
         SceneManager.LoadScene(gameplaySceneName);
     }
 
@@ -119,7 +113,7 @@ public class MainMenuUI : MonoBehaviour
     private void ExitGame()
     {
 #if UNITY_EDITOR
-        Debug.Log("ExitGame called. In build this will close the application.");
+        Debug.Log("ExitGame called.");
 #else
         Application.Quit();
 #endif

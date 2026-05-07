@@ -55,17 +55,35 @@ public class CameraController2D : MonoBehaviour
         float x = 0f;
         float y = 0f;
 
-        if (Input.GetKey(KeyCode.A)) x -= 1f;
-        if (Input.GetKey(KeyCode.D)) x += 1f;
-        if (Input.GetKey(KeyCode.S)) y -= 1f;
-        if (Input.GetKey(KeyCode.W)) y += 1f;
+        if (IsKeyHeld("CameraLeft", KeyCode.A)) x -= 1f;
+        if (IsKeyHeld("CameraRight", KeyCode.D)) x += 1f;
+        if (IsKeyHeld("CameraDown", KeyCode.S)) y -= 1f;
+        if (IsKeyHeld("CameraUp", KeyCode.W)) y += 1f;
 
         Vector3 dir = new Vector3(x, y, 0f);
         if (dir.sqrMagnitude > 1f)
             dir.Normalize();
 
-        float speed = moveSpeed * (Input.GetKey(KeyCode.LeftShift) ? moveSpeedBoost : 1f);
+        float speed = moveSpeed;
+
+        if (IsKeyHeld("CameraBoost", KeyCode.LeftShift))
+            speed *= moveSpeedBoost;
+
         transform.position += dir * speed * Time.deltaTime;
+    }
+
+    private bool IsKeyHeld(string actionId, KeyCode fallback)
+    {
+        KeyCode key = GetConfiguredKey(actionId, fallback);
+        return key != KeyCode.None && Input.GetKey(key);
+    }
+
+    private KeyCode GetConfiguredKey(string actionId, KeyCode fallback)
+    {
+        if (GameSettingsManager.Instance != null)
+            return GameSettingsManager.Instance.GetKey(actionId);
+
+        return fallback;
     }
 
     private void HandleZoom()
