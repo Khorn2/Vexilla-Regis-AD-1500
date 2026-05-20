@@ -38,6 +38,9 @@ public class GameUnit : MonoBehaviour
     [Header("Terrain Combat Modifiers")]
     [SerializeField, Range(0f, 1f)] private float forestRangedDamageMultiplier = 0.65f;
 
+    [Header("Flanking Debug")]
+    [SerializeField] private bool logFlankingResults = false;
+
     public bool IsSelected { get; private set; }
     public Vector2Int GridPosition { get; private set; }
     public bool IsMoving => _moveRoutine != null;
@@ -523,15 +526,74 @@ public class GameUnit : MonoBehaviour
         if (isBeingRemoved)
             return;
 
-        int finalDamage = ApplyArmorReduction(rawDamage, false);
+        AttackDirection attackDirection = FlankingUtility.GetAttackDirection(attacker, this);
+        int modifiedRawDamage = ApplyFlankingDamageModifier(attacker, rawDamage, attackDirection);
+        int finalDamage = ApplyArmorReduction(modifiedRawDamage, false);
 
         currentSize -= finalDamage;
-        ApplyMoraleLoss(finalDamage);
 
-        Debug.Log($"{name} took {finalDamage} melee damage. Current size: {currentSize}, morale: {currentMorale}");
+        ApplyMoraleLoss(finalDamage);
+        ApplyFlankingMoralePenalty(attacker, attackDirection);
+
+        if (logFlankingResults)
+            Debug.Log($"{name} took {finalDamage} melee damage from {attackDirection}. Current size: {currentSize}, morale: {currentMorale}");
+        else
+            Debug.Log($"{name} took {finalDamage} melee damage. Current size: {currentSize}, morale: {currentMorale}");
 
         if (currentSize <= 0)
             Die();
+    }
+
+    private int ApplyFlankingDamageModifier(GameUnit attacker, int rawDamage, AttackDirection attackDirection)
+    {
+        if (attacker == null || attacker.Stats == null)
+            return Mathf.Max(0, rawDamage);
+
+        float multiplier = 1f;
+
+        switch (attackDirection)
+        {
+            case AttackDirection.Flank:
+                multiplier = attacker.Stats.flankMeleeDamageMultiplier;
+                break;
+
+            case AttackDirection.Rear:
+                multiplier = attacker.Stats.rearMeleeDamageMultiplier;
+                break;
+        }
+
+        int result = Mathf.RoundToInt(rawDamage * multiplier);
+        return Mathf.Max(0, result);
+    }
+
+    private void ApplyFlankingMoralePenalty(GameUnit attacker, AttackDirection attackDirection)
+    {
+        if (attacker == null || attacker.Stats == null || stats == null)
+            return;
+
+        int penalty = 0;
+
+        switch (attackDirection)
+        {
+            case AttackDirection.Flank:
+                penalty = attacker.Stats.flankMoralePenalty;
+                break;
+
+            case AttackDirection.Rear:
+                penalty = attacker.Stats.rearMoralePenalty;
+                break;
+        }
+
+        if (penalty <= 0)
+            return;
+
+        currentMorale = Mathf.Max(0, currentMorale - penalty);
+
+        if (logFlankingResults)
+            Debug.Log($"{name} flanking morale penalty: -{penalty} from {attackDirection}. Morale: {currentMorale}");
+
+        if (!IsBroken && currentMorale < stats.brokenMoraleThreshold)
+            BreakUnit();
     }
 
     public void TakeRangedDamage(GameUnit attacker, int rawDamage)

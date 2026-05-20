@@ -19,6 +19,12 @@ public class UnitStats : ScriptableObject
     [Min(0)] public int rangedDamage = 8;
     [Min(0)] public int shootRange = 4;
 
+    [Header("Flanking")]
+    [Range(1f, 2f)] public float flankMeleeDamageMultiplier = 1.15f;
+    [Range(1f, 2f)] public float rearMeleeDamageMultiplier = 1.30f;
+    [Min(0)] public int flankMoralePenalty = 4;
+    [Min(0)] public int rearMoralePenalty = 8;
+
     [Header("Charge Impact")]
     [Min(0f)] public float chargeImpactPerTile = 2f;
     [Min(0)] public int maxChargeBonus = 20;
