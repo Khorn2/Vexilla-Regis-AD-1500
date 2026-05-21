@@ -177,6 +177,9 @@ public class GameUnit : MonoBehaviour
         if (currentOrder == order)
             return;
 
+        if (currentOrder == OrderType.Shoot && order != OrderType.Shoot && SoundManager.Instance != null)
+            SoundManager.Instance.StopRangedLoopForUnit(this);
+
         currentOrder = order;
 
         if (currentOrder == OrderType.Retreat)
@@ -356,6 +359,12 @@ public class GameUnit : MonoBehaviour
         actedThisTurn = true;
 
         target.TakeMeleeDamage(this, rawDamage);
+
+        if (SoundManager.Instance != null)
+        {
+            Vector3 soundPosition = (transform.position + target.transform.position) * 0.5f;
+            SoundManager.Instance.PlayMelee(soundPosition, 1);
+        }
     }
 
     public void ResolveAutoMeleeCombat()
@@ -384,6 +393,8 @@ public class GameUnit : MonoBehaviour
         actedThisTurn = true;
 
         Debug.Log($"{name} auto melee: targets={enemies.Count}, totalRaw={rawTotalDamage}, perTargetRaw={damagePerTarget}");
+        if (SoundManager.Instance != null)
+        SoundManager.Instance.PlayMelee(transform.position, enemies.Count);
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -485,6 +496,9 @@ public class GameUnit : MonoBehaviour
         currentAmmo = Mathf.Max(0, currentAmmo - stats.ammoPerShot);
         int ammoSpent = ammoBefore - currentAmmo;
         Debug.Log($"{name} fired: ammo -{ammoSpent}, remaining: {currentAmmo}");
+
+        if (SoundManager.Instance != null)
+        SoundManager.Instance.RegisterExecutedRangedShot(this, target);
 
         actedThisTurn = true;
 
@@ -666,6 +680,9 @@ public class GameUnit : MonoBehaviour
 
     private void BreakUnit()
     {
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.StopRangedLoopForUnit(this);
+
         IsBroken = true;
         currentOrder = OrderType.Retreat;
         RemoveAttackCommandsFromQueue();
@@ -682,6 +699,9 @@ public class GameUnit : MonoBehaviour
     {
         if (isBeingRemoved)
             return;
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.StopRangedLoopForUnit(this);
 
         isBeingRemoved = true;
 
@@ -715,9 +735,12 @@ public class GameUnit : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void ClearPlannedAction()
+        public void ClearPlannedAction()
     {
         plannedCommands.Clear();
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.StopRangedLoopForUnit(this);
     }
 
     public void QueueMove(Vector2Int target, bool append)
@@ -743,7 +766,12 @@ public class GameUnit : MonoBehaviour
         if (target == null) return;
 
         if (!append)
+        {
             plannedCommands.Clear();
+
+            if (currentOrder == OrderType.Shoot && SoundManager.Instance != null)
+                SoundManager.Instance.StopRangedLoopForUnit(this);
+        }
 
         PlannedCommandType type =
             currentOrder == OrderType.Shoot

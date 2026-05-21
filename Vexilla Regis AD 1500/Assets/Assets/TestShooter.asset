@@ -20,6 +20,13 @@ MonoBehaviour:
   meleeDamage: 4
   rangedDamage: 10
   shootRange: 5
+  flankMeleeDamageMultiplier: 1.15
+  rearMeleeDamageMultiplier: 1.3
+  flankMoralePenalty: 4
+  rearMoralePenalty: 8
+  chargeImpactPerTile: 2
+  maxChargeBonus: 20
+  minTilesForChargeBonus: 2
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
   maxMorale: 100
@@ -39,4 +46,5 @@ MonoBehaviour:
   ammoPerShot: 10
   canCharge: 1
   canShoot: 1
+  isCannon: 0
   allowFriendlyFireThroughAlly: 1

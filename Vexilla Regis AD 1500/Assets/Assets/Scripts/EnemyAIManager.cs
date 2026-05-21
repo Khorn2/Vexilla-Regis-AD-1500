@@ -6,6 +6,12 @@ public class EnemyAIManager : MonoBehaviour
     [SerializeField] private GridManager grid;
     [SerializeField] private TurnManager turnManager;
 
+    [Header("Flanking AI")]
+    [SerializeField, Range(0f, 1f)] private float flankAttemptChance = 0.65f;
+    [SerializeField, Range(0f, 1f)] private float repositionFromFrontChance = 0.35f;
+    [SerializeField, Min(0)] private int maxExtraTravelCostForFlank = 3;
+    [SerializeField] private bool logFlankingAI = false;
+
     private enum ShotQuality
     {
         Blocked,
@@ -176,11 +182,78 @@ public class EnemyAIManager : MonoBehaviour
 
     private void DecideMeleeAction(GameUnit enemy, GameUnit target)
     {
+        if (enemy == null || target == null || grid == null)
+            return;
+
         if (enemy.IsAdjacentTo(target))
         {
+            AttackDirection currentAttackDirection = FlankingUtility.GetAttackDirection(enemy, target);
+
+            if (currentAttackDirection == AttackDirection.Flank || currentAttackDirection == AttackDirection.Rear)
+            {
+                enemy.SetOrder(OrderType.Charge);
+                enemy.QueueAttack(target, false);
+
+                if (logFlankingAI)
+                    Debug.Log($"{enemy.name} attacks from {currentAttackDirection}.");
+
+                return;
+            }
+
+            if (Random.value > repositionFromFrontChance)
+            {
+                enemy.SetOrder(OrderType.Charge);
+                enemy.QueueAttack(target, false);
+                return;
+            }
+
+            if (TryFindBestFlankingTile(enemy, target, out Vector2Int repositionTile))
+            {
+                if (repositionTile != enemy.GridPosition)
+                {
+                    enemy.SetOrder(OrderType.March);
+                    enemy.QueueMove(repositionTile, false);
+
+                    if (logFlankingAI)
+                        Debug.Log($"{enemy.name} repositions for flank to {repositionTile}.");
+
+                    return;
+                }
+            }
+
             enemy.SetOrder(OrderType.Charge);
             enemy.QueueAttack(target, false);
             return;
+        }
+
+        if (Random.value <= flankAttemptChance)
+        {
+            if (TryFindBestFlankingTile(enemy, target, out Vector2Int flankTile))
+            {
+                int flankCost = GetPathTravelCost(enemy, flankTile);
+
+                if (flankCost <= grid.GetMovementBudgetForUnit(enemy))
+                {
+                    enemy.SetOrder(OrderType.March);
+                    enemy.QueueMove(flankTile, false);
+
+                    if (logFlankingAI)
+                        Debug.Log($"{enemy.name} moves to flanking tile {flankTile}.");
+
+                    return;
+                }
+
+                if (IsFlankRouteReasonable(enemy, target, flankTile))
+                {
+                    enemy.SetOrder(OrderType.March);
+                    enemy.QueueMove(flankTile, false);
+
+                    if (logFlankingAI)
+                        Debug.Log($"{enemy.name} starts longer flank route to {flankTile}.");
+
+                    return;
+                }
+            }
         }
 
         if (grid.TryGetFreeAdjacentTile(target.GridPosition, enemy.GridPosition, out Vector2Int attackTile))
@@ -202,6 +275,105 @@ public class EnemyAIManager : MonoBehaviour
         Vector2Int moveTarget = MoveTowards(enemy, target.GridPosition);
         enemy.SetOrder(OrderType.March);
         enemy.QueueMove(moveTarget, false);
+    }
+
+    private bool TryFindBestFlankingTile(GameUnit enemy, GameUnit target, out Vector2Int bestTile)
+    {
+        bestTile = enemy != null ? enemy.GridPosition : Vector2Int.zero;
+
+        if (enemy == null || target == null || grid == null)
+            return false;
+
+        Vector2Int[] neighbours = grid.GetNeighbours4(target.GridPosition);
+
+        float bestScore = float.MaxValue;
+        bool found = false;
+
+        for (int i = 0; i < neighbours.Length; i++)
+        {
+            Vector2Int candidate = neighbours[i];
+
+            if (!grid.IsInside(candidate))
+                continue;
+
+            if (!grid.IsWalkable(candidate))
+                continue;
+
+            GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
+            if (unitAtCandidate != null && unitAtCandidate != enemy)
+                continue;
+
+            AttackDirection attackDirection = GetAttackDirectionFromPosition(candidate, target);
+
+            if (attackDirection == AttackDirection.Front)
+                continue;
+
+            int travelCost = GetPathTravelCost(enemy, candidate);
+            if (travelCost == int.MaxValue)
+                continue;
+
+            float distanceFromEnemy = Vector2Int.Distance(enemy.GridPosition, candidate);
+            float terrainScore = GetMovementTerrainScore(candidate);
+            float directionScore = attackDirection == AttackDirection.Rear ? -2f : -1f;
+            float score = travelCost + distanceFromEnemy * 0.25f - terrainScore + directionScore;
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestTile = candidate;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    private AttackDirection GetAttackDirectionFromPosition(Vector2Int attackerPosition, GameUnit defender)
+    {
+        if (defender == null)
+            return AttackDirection.Front;
+
+        Vector2Int delta = attackerPosition - defender.GridPosition;
+
+        if (delta == Vector2Int.zero)
+            return AttackDirection.Front;
+
+        Vector2 attackVector = new Vector2(delta.x, delta.y).normalized;
+        Vector2 defenderForward = new Vector2(defender.transform.up.x, defender.transform.up.y);
+
+        if (defenderForward.sqrMagnitude < 0.01f)
+            defenderForward = Vector2.up;
+
+        defenderForward.Normalize();
+
+        float angle = Vector2.Angle(defenderForward, attackVector);
+
+        if (angle < 60f)
+            return AttackDirection.Front;
+
+        if (angle < 135f)
+            return AttackDirection.Flank;
+
+        return AttackDirection.Rear;
+    }
+
+    private bool IsFlankRouteReasonable(GameUnit enemy, GameUnit target, Vector2Int flankTile)
+    {
+        if (enemy == null || target == null || grid == null)
+            return false;
+
+        int flankCost = GetPathTravelCost(enemy, flankTile);
+        if (flankCost == int.MaxValue)
+            return false;
+
+        if (!grid.TryGetFreeAdjacentTile(target.GridPosition, enemy.GridPosition, out Vector2Int normalAttackTile))
+            return true;
+
+        int normalCost = GetPathTravelCost(enemy, normalAttackTile);
+        if (normalCost == int.MaxValue)
+            return true;
+
+        return flankCost <= normalCost + maxExtraTravelCostForFlank;
     }
 
     private bool CanShootTargetFromPosition(GameUnit shooter, Vector2Int shooterPosition, GameUnit target)
