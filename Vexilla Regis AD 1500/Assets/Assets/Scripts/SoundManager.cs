@@ -10,6 +10,11 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioClip musketShotClip;
     [SerializeField] private AudioClip cannonShotClip;
 
+    [Header("Movement Clips")]
+    [SerializeField] private AudioClip infantryMovementClip;
+    [SerializeField] private AudioClip cavalryMovementClip;
+    [SerializeField] private AudioClip cannonMovementClip;
+
     [Header("3D Audio")]
     [SerializeField, Min(0.1f)] private float minDistance = 2f;
     [SerializeField, Min(1f)] private float maxDistance = 14f;
@@ -20,6 +25,9 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float meleeMaxVolume = 1f;
     [SerializeField, Range(0f, 1f)] private float musketVolume = 0.8f;
     [SerializeField, Range(0f, 1f)] private float cannonVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float infantryMovementVolume = 0.45f;
+    [SerializeField, Range(0f, 1f)] private float cavalryMovementVolume = 0.65f;
+    [SerializeField, Range(0f, 1f)] private float cannonMovementVolume = 0.75f;
 
     [Header("Melee Loop")]
     [SerializeField, Min(1)] private int meleeIntensityReference = 4;
@@ -30,6 +38,10 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Min(0.1f)] private float rangedScanInterval = 0.25f;
     [SerializeField, Min(0.1f)] private float musketRepeatInterval = 2.5f;
     [SerializeField, Min(0.1f)] private float cannonRepeatInterval = 3f;
+
+    [Header("Movement Loop")]
+    [SerializeField, Min(0.05f)] private float movementScanInterval = 0.05f;
+    [SerializeField, Min(0.05f)] private float movementFollowSpeed = 30f;
 
     [Header("Debug")]
     [SerializeField] private bool logSoundEvents = false;
@@ -42,13 +54,23 @@ public class SoundManager : MonoBehaviour
         public float lastShotTime;
     }
 
+    private class ActiveMovementSound
+    {
+        public GameUnit unit;
+        public AudioSource source;
+        public GameObject audioObject;
+        public float localVolume;
+    }
+
     private AudioSource meleeSource;
     private float meleeScanTimer;
     private float rangedScanTimer;
+    private float movementScanTimer;
     private float targetMeleeVolume;
     private Vector3 targetMeleePosition;
 
     private readonly Dictionary<GameUnit, ActiveRangedSound> activeRangedSounds = new Dictionary<GameUnit, ActiveRangedSound>();
+    private readonly Dictionary<GameUnit, ActiveMovementSound> activeMovementSounds = new Dictionary<GameUnit, ActiveMovementSound>();
 
     private void Awake()
     {
@@ -66,6 +88,8 @@ public class SoundManager : MonoBehaviour
     {
         UpdateMeleeLoop();
         UpdateRangedLoop();
+        ScanMovementLoops();
+        UpdateMovementLoops();
     }
 
     public void PlayMelee(Vector3 position, int intensity)
@@ -83,19 +107,81 @@ public class SoundManager : MonoBehaviour
         PlayOneShotAtPosition(cannonShotClip, position, cannonVolume, "Cannon");
     }
 
+    public void StartMovementLoopForUnit(GameUnit unit)
+    {
+        if (unit == null) return;
+        if (unit.Stats == null) return;
+        if (activeMovementSounds.ContainsKey(unit)) return;
+        if (!HasPendingMoveCommand(unit)) return;
+
+        AudioClip clip = GetMovementClipForUnit(unit);
+        float localVolume = GetMovementVolumeForUnit(unit);
+
+        if (clip == null)
+            return;
+
+        GameObject audioObject = new GameObject($"SFX_MoveLoop_{unit.name}");
+        audioObject.transform.position = unit.transform.position;
+        audioObject.transform.SetParent(transform);
+
+        AudioSource source = audioObject.AddComponent<AudioSource>();
+        source.clip = clip;
+        source.loop = true;
+        source.playOnAwake = false;
+        source.spatialBlend = spatialBlend;
+        source.minDistance = minDistance;
+        source.maxDistance = maxDistance;
+        source.rolloffMode = AudioRolloffMode.Linear;
+        source.volume = GetFinalVolume(localVolume);
+
+        ActiveMovementSound activeSound = new ActiveMovementSound
+        {
+            unit = unit,
+            source = source,
+            audioObject = audioObject,
+            localVolume = localVolume
+        };
+
+        activeMovementSounds[unit] = activeSound;
+        source.Play();
+
+        if (logSoundEvents)
+            Debug.Log($"SoundManager: started movement loop for {unit.name}.");
+    }
+
+    public void StopMovementLoopForUnit(GameUnit unit)
+    {
+        if (unit == null)
+            return;
+
+        if (!activeMovementSounds.TryGetValue(unit, out ActiveMovementSound activeSound))
+            return;
+
+        if (activeSound.source != null)
+            activeSound.source.Stop();
+
+        if (activeSound.audioObject != null)
+            Destroy(activeSound.audioObject);
+
+        activeMovementSounds.Remove(unit);
+
+        if (logSoundEvents)
+            Debug.Log($"SoundManager: stopped movement loop for {unit.name}.");
+    }
+
+    public void StopAllMovementLoops()
+    {
+        List<GameUnit> units = new List<GameUnit>(activeMovementSounds.Keys);
+
+        for (int i = 0; i < units.Count; i++)
+            StopMovementLoopForUnit(units[i]);
+    }
+
     public void RegisterExecutedRangedShot(GameUnit shooter, GameUnit target)
     {
-        if (shooter == null || target == null)
-            return;
-
-        if (shooter.Stats == null)
-            return;
-
-        if (!shooter.Stats.canShoot)
-            return;
-
-        if (shooter.CurrentAmmo < 0)
-            return;
+        if (shooter == null || target == null) return;
+        if (shooter.Stats == null) return;
+        if (!shooter.Stats.canShoot) return;
 
         bool isCannon = shooter.Stats.isCannon;
 
@@ -127,6 +213,105 @@ public class SoundManager : MonoBehaviour
     public void StopAllRangedLoops()
     {
         activeRangedSounds.Clear();
+    }
+
+    private void ScanMovementLoops()
+    {
+        movementScanTimer -= Time.deltaTime;
+
+        if (movementScanTimer > 0f)
+            return;
+
+        movementScanTimer = movementScanInterval;
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
+            if (!HasPendingMoveCommand(unit)) continue;
+
+            StartMovementLoopForUnit(unit);
+        }
+    }
+
+    private void UpdateMovementLoops()
+    {
+        if (activeMovementSounds.Count == 0)
+            return;
+
+        List<GameUnit> unitsToRemove = null;
+
+        foreach (KeyValuePair<GameUnit, ActiveMovementSound> pair in activeMovementSounds)
+        {
+            GameUnit unit = pair.Key;
+            ActiveMovementSound activeSound = pair.Value;
+
+            if (!IsMovementSoundStillValid(activeSound))
+            {
+                if (unitsToRemove == null)
+                    unitsToRemove = new List<GameUnit>();
+
+                unitsToRemove.Add(unit);
+                continue;
+            }
+
+            activeSound.audioObject.transform.position = Vector3.Lerp(
+                activeSound.audioObject.transform.position,
+                activeSound.unit.transform.position,
+                Time.deltaTime * movementFollowSpeed
+            );
+
+            activeSound.source.volume = GetFinalVolume(activeSound.localVolume);
+
+            if (!activeSound.source.isPlaying)
+                activeSound.source.Play();
+        }
+
+        if (unitsToRemove == null)
+            return;
+
+        for (int i = 0; i < unitsToRemove.Count; i++)
+            StopMovementLoopForUnit(unitsToRemove[i]);
+    }
+
+    private bool IsMovementSoundStillValid(ActiveMovementSound activeSound)
+    {
+        if (activeSound == null) return false;
+        if (activeSound.unit == null) return false;
+        if (activeSound.source == null) return false;
+        if (activeSound.audioObject == null) return false;
+        if (activeSound.unit.IsDead) return false;
+        if (activeSound.unit.IsBroken) return false;
+        if (!HasPendingMoveCommand(activeSound.unit)) return false;
+
+        return true;
+    }
+
+    private bool HasPendingMoveCommand(GameUnit unit)
+    {
+        if (unit == null)
+            return false;
+
+        IReadOnlyList<PlannedCommand> commands = unit.PlannedCommands;
+
+        if (commands == null)
+            return false;
+
+        for (int i = 0; i < commands.Count; i++)
+        {
+            PlannedCommand command = commands[i];
+
+            if (command == null)
+                continue;
+
+            if (command.commandType == PlannedCommandType.Move)
+                return true;
+        }
+
+        return false;
     }
 
     private void UpdateMeleeLoop()
@@ -309,6 +494,40 @@ public class SoundManager : MonoBehaviour
         if (unit.IsBroken) return false;
 
         return true;
+    }
+
+    private AudioClip GetMovementClipForUnit(GameUnit unit)
+    {
+        if (unit == null || unit.Stats == null)
+            return null;
+
+        if (unit.Stats.isCannon)
+            return cannonMovementClip;
+
+        if (unit.Stats.isCavalry)
+            return cavalryMovementClip;
+
+        if (unit.Stats.isInfantry)
+            return infantryMovementClip;
+
+        return infantryMovementClip;
+    }
+
+    private float GetMovementVolumeForUnit(GameUnit unit)
+    {
+        if (unit == null || unit.Stats == null)
+            return infantryMovementVolume;
+
+        if (unit.Stats.isCannon)
+            return cannonMovementVolume;
+
+        if (unit.Stats.isCavalry)
+            return cavalryMovementVolume;
+
+        if (unit.Stats.isInfantry)
+            return infantryMovementVolume;
+
+        return infantryMovementVolume;
     }
 
     private void CreateMeleeSource()

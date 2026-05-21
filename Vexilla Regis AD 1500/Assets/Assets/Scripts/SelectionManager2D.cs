@@ -17,9 +17,6 @@ public class SelectionManager2D : MonoBehaviour
     [Header("Box Selection")]
     [SerializeField] private float dragThreshold = 12f;
 
-    [Header("Manual Retreat Rules")]
-    [SerializeField, Min(1)] private int retreatCooldownTurns = 5;
-
     public GameUnit Selected => PrimarySelected;
     public bool HasSelection => PrimarySelected != null;
     public int SelectedCount => selectedUnits.Count;
@@ -30,9 +27,8 @@ public class SelectionManager2D : MonoBehaviour
     private bool isBoxSelecting;
     private Vector2 dragStartScreen;
     private Vector2 dragCurrentScreen;
-    private bool selectionLockedByBattleEnd = false;
-
-    private int lastManualRetreatTurn = -9999;
+    private bool selectionLockedByBattleEnd;
+    private bool blockedFailedRetreatInput;
 
     private GameUnit PrimarySelected
     {
@@ -69,11 +65,23 @@ public class SelectionManager2D : MonoBehaviour
 
         selectionLockedByBattleEnd = false;
 
+        RefreshBlockedRetreatState();
         HandleLeftMouseSelection();
-        HandleRightClick_Action();
+        HandleRightClickAction();
         HandleOrderInput();
         HandleClearPlannedInput();
         UpdateRangeHighlight();
+    }
+
+    private void RefreshBlockedRetreatState()
+    {
+        if (!blockedFailedRetreatInput)
+            return;
+
+        GameUnit selected = PrimarySelected;
+
+        if (selected == null || selected.CanUseManualRetreat())
+            blockedFailedRetreatInput = false;
     }
 
     private KeyCode GetConfiguredKey(string actionId, KeyCode fallback)
@@ -113,6 +121,7 @@ public class SelectionManager2D : MonoBehaviour
             return;
         }
 
+        blockedFailedRetreatInput = false;
         SetOrderForSelection(order);
     }
 
@@ -126,22 +135,29 @@ public class SelectionManager2D : MonoBehaviour
         {
             if (selectedUnits.Count != 1) return false;
 
-            int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
-            int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
-
-            return turnsSinceLastRetreat >= retreatCooldownTurns;
+            GameUnit unit = selectedUnits[0];
+            return unit != null && unit.CanApplyOrder(OrderType.Retreat);
         }
 
-        return true;
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameUnit unit = selectedUnits[i];
+
+            if (unit != null && unit.CanApplyOrder(order))
+                return true;
+        }
+
+        return false;
     }
 
     public int GetManualRetreatCooldownRemaining()
     {
-        int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
-        int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
-        int remaining = retreatCooldownTurns - turnsSinceLastRetreat;
+        GameUnit unit = PrimarySelected;
 
-        return Mathf.Max(0, remaining);
+        if (unit == null)
+            return 0;
+
+        return unit.GetManualRetreatCooldownRemaining();
     }
 
     private void HandleLeftMouseSelection()
@@ -256,6 +272,7 @@ public class SelectionManager2D : MonoBehaviour
                 return;
         }
 
+        blockedFailedRetreatInput = false;
         selectedUnits.Add(unit);
         unit.SetSelected(true);
 
@@ -263,7 +280,7 @@ public class SelectionManager2D : MonoBehaviour
             cameraController.DragEnabled = false;
     }
 
-    private void HandleRightClick_Action()
+    private void HandleRightClickAction()
     {
         if (turnManager != null && turnManager.IsBattleEnded) return;
         if (!Input.GetMouseButtonDown(1)) return;
@@ -286,6 +303,12 @@ public class SelectionManager2D : MonoBehaviour
 
         GameUnit selected = PrimarySelected;
         if (selected == null || selected.IsDead || selected.IsBroken || grid == null) return;
+
+        if (blockedFailedRetreatInput)
+        {
+            Debug.Log("Retreat is on cooldown. Select another order before assigning movement.");
+            return;
+        }
 
         bool append = IsAppendQueueHeld();
 
@@ -318,6 +341,13 @@ public class SelectionManager2D : MonoBehaviour
             if (selectedUnits.Count != 1)
             {
                 Debug.Log("Manual retreat can be assigned only to one selected unit.");
+                return;
+            }
+
+            if (!selected.CanUseManualRetreat())
+            {
+                Debug.Log($"Manual retreat cooldown remaining: {selected.GetManualRetreatCooldownRemaining()} turn(s).");
+                blockedFailedRetreatInput = true;
                 return;
             }
 
@@ -528,27 +558,29 @@ public class SelectionManager2D : MonoBehaviour
         if (selectedUnits.Count != 1)
         {
             Debug.Log("Manual retreat can be assigned only to one selected unit.");
+            blockedFailedRetreatInput = true;
             return;
         }
 
         GameUnit unit = selectedUnits[0];
         if (unit == null || unit.IsDead || unit.IsBroken)
-            return;
-
-        int currentTurn = turnManager != null ? turnManager.TurnNumber : 0;
-        int turnsSinceLastRetreat = currentTurn - lastManualRetreatTurn;
-
-        if (turnsSinceLastRetreat < retreatCooldownTurns)
         {
-            int remaining = retreatCooldownTurns - turnsSinceLastRetreat;
-            Debug.Log($"Manual retreat on cooldown. Available in {remaining} turn(s).");
+            blockedFailedRetreatInput = true;
             return;
         }
 
-        unit.SetOrder(OrderType.Retreat);
-        lastManualRetreatTurn = currentTurn;
+        if (!unit.CanUseManualRetreat())
+        {
+            Debug.Log($"Manual retreat cooldown remaining: {unit.GetManualRetreatCooldownRemaining()} turn(s).");
+            blockedFailedRetreatInput = true;
+            return;
+        }
 
-        Debug.Log($"Selection -> applied order: Retreat to 1 unit. Cooldown: {retreatCooldownTurns} turns.");
+        bool applied = unit.TrySetOrder(OrderType.Retreat);
+        blockedFailedRetreatInput = !applied;
+
+        if (applied)
+            Debug.Log("Selection -> applied order: Retreat to 1 unit.");
     }
 
     private void SetOrderForSelection(OrderType order)
@@ -556,11 +588,13 @@ public class SelectionManager2D : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded) return;
         if (turnManager != null && !turnManager.IsPlanningPhase) return;
 
+        blockedFailedRetreatInput = false;
+
         for (int i = 0; i < selectedUnits.Count; i++)
         {
             GameUnit unit = selectedUnits[i];
             if (unit != null && !unit.IsDead && !unit.IsBroken)
-                unit.SetOrder(order);
+                unit.TrySetOrder(order);
         }
 
         Debug.Log($"Selection -> applied order: {order} to {selectedUnits.Count} unit(s)");
@@ -573,6 +607,8 @@ public class SelectionManager2D : MonoBehaviour
 
         if (IsKeyDown("ClearOrders", KeyCode.Delete))
         {
+            blockedFailedRetreatInput = false;
+
             for (int i = 0; i < selectedUnits.Count; i++)
             {
                 GameUnit unit = selectedUnits[i];
@@ -611,6 +647,8 @@ public class SelectionManager2D : MonoBehaviour
 
     private void ClearSelection()
     {
+        blockedFailedRetreatInput = false;
+
         for (int i = 0; i < selectedUnits.Count; i++)
         {
             if (selectedUnits[i] != null)

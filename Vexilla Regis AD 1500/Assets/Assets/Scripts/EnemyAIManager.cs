@@ -6,6 +6,19 @@ public class EnemyAIManager : MonoBehaviour
     [SerializeField] private GridManager grid;
     [SerializeField] private TurnManager turnManager;
 
+    [Header("Tactical AI")]
+    [SerializeField, Range(0f, 1f)] private float globalAggression = 0.45f;
+    [SerializeField, Range(0f, 1f)] private float lineHoldingBias = 0.75f;
+    [SerializeField, Range(0f, 1f)] private float rangedPreference = 0.9f;
+    [SerializeField, Range(0f, 1f)] private float cannonDistancePreference = 0.9f;
+    [SerializeField, Range(0f, 1f)] private float cavalryAggressionBonus = 0.25f;
+    [SerializeField, Min(1)] private int desiredLineDistance = 4;
+    [SerializeField, Min(1)] private int cannonDesiredDistance = 6;
+    [SerializeField, Min(1)] private int threatScanRadius = 6;
+    [SerializeField, Min(0f)] private float allOutAttackAdvantageThreshold = 1.15f;
+    [SerializeField, Min(0f)] private float highThreatThreshold = 70f;
+    [SerializeField] private bool logTacticalAI = false;
+
     [Header("Flanking AI")]
     [SerializeField, Range(0f, 1f)] private float flankAttemptChance = 0.65f;
     [SerializeField, Range(0f, 1f)] private float repositionFromFrontChance = 0.35f;
@@ -17,6 +30,26 @@ public class EnemyAIManager : MonoBehaviour
         Blocked,
         RiskyThroughOneAlly,
         Clean
+    }
+
+    private enum TacticalActionType
+    {
+        Hold,
+        Shoot,
+        MoveToShootingPosition,
+        MoveToLinePosition,
+        MoveTowards,
+        Charge,
+        Flank
+    }
+
+    private struct TacticalAction
+    {
+        public TacticalActionType type;
+        public GameUnit target;
+        public Vector2Int position;
+        public float score;
+        public ShotQuality shotQuality;
     }
 
     private void Awake()
@@ -34,6 +67,10 @@ public class EnemyAIManager : MonoBehaviour
             return;
 
         List<GameUnit> enemies = GetEnemyUnits();
+        List<GameUnit> players = GetPlayerUnits();
+
+        float armyAdvantage = EvaluateArmyAdvantage(enemies, players);
+        bool allOutAttack = ShouldCommitToAttack(enemies, players, armyAdvantage);
 
         foreach (GameUnit unit in enemies)
         {
@@ -46,13 +83,11 @@ public class EnemyAIManager : MonoBehaviour
 
             unit.ClearPlannedAction();
 
-            GameUnit target = FindBestPlayerTarget(unit);
-            if (target == null) continue;
-
-            DecideAction(unit, target);
+            TacticalAction action = ChooseBestAction(unit, players, armyAdvantage, allOutAttack);
+            ApplyAction(unit, action);
         }
 
-        Debug.Log("Enemy AI finished planning.");
+        Debug.Log("Enemy AI finished tactical planning.");
     }
 
     private List<GameUnit> GetEnemyUnits()
@@ -61,7 +96,7 @@ public class EnemyAIManager : MonoBehaviour
 
         foreach (GameUnit unit in GameUnit.AllUnits)
         {
-            if (unit != null && !unit.IsDead && unit.TeamId == 1)
+            if (unit != null && !unit.IsDead && !unit.IsBroken && unit.TeamId == 1)
                 result.Add(unit);
         }
 
@@ -81,208 +116,701 @@ public class EnemyAIManager : MonoBehaviour
         return result;
     }
 
-    private GameUnit FindBestPlayerTarget(GameUnit enemy)
+    private TacticalAction ChooseBestAction(GameUnit enemy, List<GameUnit> players, float armyAdvantage, bool allOutAttack)
     {
-        List<GameUnit> players = GetPlayerUnits();
+        TacticalAction best = new TacticalAction
+        {
+            type = TacticalActionType.Hold,
+            target = null,
+            position = enemy != null ? enemy.GridPosition : Vector2Int.zero,
+            score = 0f,
+            shotQuality = ShotQuality.Blocked
+        };
 
-        GameUnit best = null;
-        float bestScore = float.MaxValue;
+        if (enemy == null || enemy.Stats == null || grid == null || players == null || players.Count == 0)
+            return best;
+
+        float localThreat = EvaluateLocalThreat(enemy, players);
+        float aggression = GetUnitAggression(enemy, armyAdvantage, localThreat, allOutAttack);
 
         for (int i = 0; i < players.Count; i++)
         {
-            GameUnit player = players[i];
-            if (player == null) continue;
+            GameUnit target = players[i];
+            if (target == null) continue;
 
-            float dist = Vector2Int.Distance(enemy.GridPosition, player.GridPosition);
-            float score = dist - (player.CurrentSize * 0.01f);
+            List<TacticalAction> candidates = BuildCandidateActions(enemy, target, aggression, localThreat, allOutAttack);
 
-            if (score < bestScore)
+            for (int j = 0; j < candidates.Count; j++)
             {
-                bestScore = score;
-                best = player;
+                if (candidates[j].score > best.score)
+                    best = candidates[j];
             }
         }
+
+        if (logTacticalAI)
+            Debug.Log($"{enemy.name} AI action: {best.type}, score={best.score:F1}, target={(best.target != null ? best.target.name : "none")}, pos={best.position}");
 
         return best;
     }
 
-    private void DecideAction(GameUnit enemy, GameUnit target)
+    private List<TacticalAction> BuildCandidateActions(GameUnit enemy, GameUnit target, float aggression, float localThreat, bool allOutAttack)
     {
-        if (enemy == null || target == null || grid == null)
-            return;
+        List<TacticalAction> actions = new List<TacticalAction>();
 
-        if (enemy.Stats != null && enemy.Stats.canShoot)
+        actions.Add(BuildHoldAction(enemy, target, aggression, localThreat));
+
+        if (enemy.Stats.canShoot)
         {
-            DecideRangedAction(enemy, target);
-            return;
+            TacticalAction shoot = BuildShootAction(enemy, target, aggression, localThreat);
+            if (shoot.score > float.MinValue) actions.Add(shoot);
+
+            TacticalAction shootingMove = BuildMoveToShootingPositionAction(enemy, target, aggression, localThreat);
+            if (shootingMove.score > float.MinValue) actions.Add(shootingMove);
+
+            TacticalAction lineMove = BuildMoveToLinePositionAction(enemy, target, aggression, localThreat);
+            if (lineMove.score > float.MinValue) actions.Add(lineMove);
+
+            return actions;
         }
 
-        DecideMeleeAction(enemy, target);
+        if (enemy.Stats.canCharge)
+        {
+            TacticalAction charge = BuildChargeAction(enemy, target, aggression, localThreat, allOutAttack);
+            if (charge.score > float.MinValue) actions.Add(charge);
+
+            TacticalAction flank = BuildFlankAction(enemy, target, aggression, localThreat, allOutAttack);
+            if (flank.score > float.MinValue) actions.Add(flank);
+        }
+
+        TacticalAction approach = BuildMoveTowardsAction(enemy, target, aggression, localThreat, allOutAttack);
+        if (approach.score > float.MinValue) actions.Add(approach);
+
+        return actions;
     }
 
-    private void DecideRangedAction(GameUnit enemy, GameUnit target)
+    private TacticalAction BuildHoldAction(GameUnit enemy, GameUnit target, float aggression, float localThreat)
     {
-        GameUnit adjacentEnemy = FindAdjacentEnemy(enemy);
+        float distance = Vector2Int.Distance(enemy.GridPosition, target.GridPosition);
+        float score = 10f;
 
-        if (adjacentEnemy != null)
+        if (enemy.Stats.canShoot)
         {
-            enemy.SetOrder(OrderType.Charge);
-            enemy.QueueAttack(adjacentEnemy, false);
-            return;
+            int preferredDistance = enemy.Stats.isCannon ? cannonDesiredDistance : desiredLineDistance;
+            float distanceFit = Mathf.Max(0f, 16f - Mathf.Abs(distance - preferredDistance) * 2f);
+
+            score += distanceFit;
+            score += lineHoldingBias * 35f;
+
+            if (CanShootTargetFromPosition(enemy, enemy.GridPosition, target))
+                score += rangedPreference * 35f;
+
+            if (enemy.Stats.isCannon)
+                score += cannonDistancePreference * 35f;
         }
 
-        ShotQuality currentShotQuality = EvaluateShotQuality(enemy, enemy.GridPosition, target);
+        if (localThreat > highThreatThreshold)
+            score -= 8f;
 
-        if (currentShotQuality == ShotQuality.Clean && CanShootTargetFromPosition(enemy, enemy.GridPosition, target))
+        score -= aggression * 8f;
+
+        return new TacticalAction
         {
-            enemy.SetOrder(OrderType.Shoot);
-            enemy.QueueAttack(target, false);
-            return;
-        }
-
-        if (TryFindBestCleanShootingPosition(enemy, target, out Vector2Int cleanShootingPos))
-        {
-            if (cleanShootingPos == enemy.GridPosition)
-            {
-                enemy.SetOrder(OrderType.Shoot);
-                enemy.QueueAttack(target, false);
-                return;
-            }
-
-            enemy.SetOrder(OrderType.March);
-            enemy.QueueMove(cleanShootingPos, false);
-            return;
-        }
-
-        if (currentShotQuality == ShotQuality.RiskyThroughOneAlly && CanShootTargetFromPosition(enemy, enemy.GridPosition, target))
-        {
-            enemy.SetOrder(OrderType.Shoot);
-            enemy.QueueAttack(target, false);
-            return;
-        }
-
-        if (TryFindBestRiskyShootingPosition(enemy, target, out Vector2Int riskyShootingPos))
-        {
-            if (riskyShootingPos == enemy.GridPosition)
-            {
-                enemy.SetOrder(OrderType.Shoot);
-                enemy.QueueAttack(target, false);
-                return;
-            }
-
-            enemy.SetOrder(OrderType.March);
-            enemy.QueueMove(riskyShootingPos, false);
-            return;
-        }
-
-        Vector2Int moveTarget = MoveTowards(enemy, target.GridPosition);
-        enemy.SetOrder(OrderType.March);
-        enemy.QueueMove(moveTarget, false);
+            type = TacticalActionType.Hold,
+            target = target,
+            position = enemy.GridPosition,
+            score = score,
+            shotQuality = ShotQuality.Blocked
+        };
     }
 
-    private void DecideMeleeAction(GameUnit enemy, GameUnit target)
+    private TacticalAction BuildShootAction(GameUnit enemy, GameUnit target, float aggression, float localThreat)
     {
-        if (enemy == null || target == null || grid == null)
-            return;
+        ShotQuality quality = EvaluateShotQuality(enemy, enemy.GridPosition, target);
 
-        if (enemy.IsAdjacentTo(target))
+        if (quality == ShotQuality.Blocked)
+            return InvalidAction();
+
+        float score = 70f;
+        score += EvaluateTargetPriority(enemy, target);
+        score += quality == ShotQuality.Clean ? 25f : 5f;
+
+        if (enemy.Stats.isCannon)
+            score += 35f;
+
+        return new TacticalAction
         {
-            AttackDirection currentAttackDirection = FlankingUtility.GetAttackDirection(enemy, target);
+            type = TacticalActionType.Shoot,
+            target = target,
+            position = enemy.GridPosition,
+            score = score,
+            shotQuality = quality
+        };
+    }
 
-            if (currentAttackDirection == AttackDirection.Flank || currentAttackDirection == AttackDirection.Rear)
-            {
-                enemy.SetOrder(OrderType.Charge);
-                enemy.QueueAttack(target, false);
+    private TacticalAction BuildMoveToShootingPositionAction(GameUnit enemy, GameUnit target, float aggression, float localThreat)
+    {
+        if (!TryFindBestShootingPosition(enemy, target, out Vector2Int bestPos, out ShotQuality quality, out float utility))
+            return InvalidAction();
 
-                if (logFlankingAI)
-                    Debug.Log($"{enemy.name} attacks from {currentAttackDirection}.");
+        if (bestPos == enemy.GridPosition)
+            return InvalidAction();
 
-                return;
-            }
+        float score = 55f;
+        score += utility;
+        score += EvaluateTargetPriority(enemy, target) * 0.5f;
+        score += quality == ShotQuality.Clean ? 20f : 4f;
 
-            if (Random.value > repositionFromFrontChance)
-            {
-                enemy.SetOrder(OrderType.Charge);
-                enemy.QueueAttack(target, false);
-                return;
-            }
+        if (enemy.Stats.isCannon)
+            score += 20f;
 
-            if (TryFindBestFlankingTile(enemy, target, out Vector2Int repositionTile))
-            {
-                if (repositionTile != enemy.GridPosition)
-                {
-                    enemy.SetOrder(OrderType.March);
-                    enemy.QueueMove(repositionTile, false);
+        if (localThreat > highThreatThreshold)
+            score -= 8f;
 
-                    if (logFlankingAI)
-                        Debug.Log($"{enemy.name} repositions for flank to {repositionTile}.");
+        return new TacticalAction
+        {
+            type = TacticalActionType.MoveToShootingPosition,
+            target = target,
+            position = bestPos,
+            score = score,
+            shotQuality = quality
+        };
+    }
 
-                    return;
-                }
-            }
+    private TacticalAction BuildMoveToLinePositionAction(GameUnit enemy, GameUnit target, float aggression, float localThreat)
+    {
+        if (!TryFindBestLineHoldingPosition(enemy, target, out Vector2Int linePos, out float utility))
+            return InvalidAction();
 
-            enemy.SetOrder(OrderType.Charge);
-            enemy.QueueAttack(target, false);
-            return;
+        if (linePos == enemy.GridPosition)
+            return InvalidAction();
+
+        float score = 42f;
+        score += utility;
+        score += lineHoldingBias * 25f;
+
+        if (enemy.Stats.isCannon)
+            score += cannonDistancePreference * 20f;
+
+        return new TacticalAction
+        {
+            type = TacticalActionType.MoveToLinePosition,
+            target = target,
+            position = linePos,
+            score = score,
+            shotQuality = ShotQuality.Blocked
+        };
+    }
+
+    private TacticalAction BuildChargeAction(GameUnit enemy, GameUnit target, float aggression, float localThreat, bool allOutAttack)
+    {
+        if (enemy.Stats.canShoot)
+            return InvalidAction();
+
+        if (enemy.Stats.isCannon)
+            return InvalidAction();
+
+        bool adjacent = enemy.IsAdjacentTo(target);
+        bool canReachAdjacent = CanReachAdjacentToTarget(enemy, target, out Vector2Int attackTile);
+
+        if (!adjacent && !canReachAdjacent)
+            return InvalidAction();
+
+        float score = 20f;
+        score += EvaluateTargetPriority(enemy, target);
+        score += aggression * 35f;
+        score += allOutAttack ? 25f : 0f;
+        score += localThreat > highThreatThreshold ? 10f : 0f;
+
+        if (enemy.Stats.isCavalry)
+            score += cavalryAggressionBonus * 40f;
+
+        if (adjacent)
+        {
+            AttackDirection direction = FlankingUtility.GetAttackDirection(enemy, target);
+
+            if (direction == AttackDirection.Flank)
+                score += 18f;
+            else if (direction == AttackDirection.Rear)
+                score += 28f;
+            else
+                score += Random.value <= repositionFromFrontChance ? -10f : 4f;
         }
 
-        if (Random.value <= flankAttemptChance)
+        return new TacticalAction
         {
-            if (TryFindBestFlankingTile(enemy, target, out Vector2Int flankTile))
-            {
-                int flankCost = GetPathTravelCost(enemy, flankTile);
+            type = TacticalActionType.Charge,
+            target = target,
+            position = adjacent ? enemy.GridPosition : attackTile,
+            score = score,
+            shotQuality = ShotQuality.Blocked
+        };
+    }
 
-                if (flankCost <= grid.GetMovementBudgetForUnit(enemy))
-                {
-                    enemy.SetOrder(OrderType.March);
-                    enemy.QueueMove(flankTile, false);
+    private TacticalAction BuildFlankAction(GameUnit enemy, GameUnit target, float aggression, float localThreat, bool allOutAttack)
+    {
+        if (enemy.Stats.canShoot)
+            return InvalidAction();
 
-                    if (logFlankingAI)
-                        Debug.Log($"{enemy.name} moves to flanking tile {flankTile}.");
+        if (enemy.Stats.isCannon)
+            return InvalidAction();
 
-                    return;
-                }
+        float chance = flankAttemptChance;
 
-                if (IsFlankRouteReasonable(enemy, target, flankTile))
-                {
-                    enemy.SetOrder(OrderType.March);
-                    enemy.QueueMove(flankTile, false);
+        if (enemy.Stats.isCavalry)
+            chance += 0.2f;
 
-                    if (logFlankingAI)
-                        Debug.Log($"{enemy.name} starts longer flank route to {flankTile}.");
+        if (Random.value > Mathf.Clamp01(chance))
+            return InvalidAction();
 
-                    return;
-                }
-            }
-        }
+        if (!TryFindBestFlankingTile(enemy, target, out Vector2Int flankTile))
+            return InvalidAction();
 
-        if (grid.TryGetFreeAdjacentTile(target.GridPosition, enemy.GridPosition, out Vector2Int attackTile))
+        int flankCost = GetPathTravelCost(enemy, flankTile);
+        if (flankCost == int.MaxValue)
+            return InvalidAction();
+
+        bool canReachNow = flankCost <= grid.GetMovementBudgetForUnit(enemy);
+        bool reasonableLongRoute = IsFlankRouteReasonable(enemy, target, flankTile);
+
+        if (!canReachNow && !reasonableLongRoute)
+            return InvalidAction();
+
+        float score = 30f;
+        score += EvaluateTargetPriority(enemy, target);
+        score += aggression * 20f;
+        score += enemy.Stats.isCavalry ? 25f : 0f;
+        score -= flankCost * 1.5f;
+
+        AttackDirection direction = GetAttackDirectionFromPosition(flankTile, target);
+
+        if (direction == AttackDirection.Rear)
+            score += 28f;
+        else if (direction == AttackDirection.Flank)
+            score += 18f;
+
+        if (logFlankingAI)
+            Debug.Log($"{enemy.name} considers flank on {target.name}: tile={flankTile}, score={score:F1}, direction={direction}");
+
+        return new TacticalAction
         {
-            Vector2Int resolved = grid.ResolveMoveDestination(enemy, enemy.GridPosition, attackTile);
+            type = TacticalActionType.Flank,
+            target = target,
+            position = flankTile,
+            score = score,
+            shotQuality = ShotQuality.Blocked
+        };
+    }
 
-            if (resolved == attackTile)
-            {
-                enemy.SetOrder(OrderType.Charge);
-                enemy.QueueAttack(target, false);
-                return;
-            }
-
-            enemy.SetOrder(OrderType.March);
-            enemy.QueueMove(attackTile, false);
-            return;
-        }
+    private TacticalAction BuildMoveTowardsAction(GameUnit enemy, GameUnit target, float aggression, float localThreat, bool allOutAttack)
+    {
+        if (enemy.Stats.canShoot)
+            return InvalidAction();
 
         Vector2Int moveTarget = MoveTowards(enemy, target.GridPosition);
-        enemy.SetOrder(OrderType.March);
-        enemy.QueueMove(moveTarget, false);
+
+        if (moveTarget == enemy.GridPosition)
+            return InvalidAction();
+
+        float score = 18f;
+        score += aggression * 25f;
+        score += allOutAttack ? 18f : 0f;
+        score += EvaluateTargetPriority(enemy, target) * 0.35f;
+
+        return new TacticalAction
+        {
+            type = TacticalActionType.MoveTowards,
+            target = target,
+            position = moveTarget,
+            score = score,
+            shotQuality = ShotQuality.Blocked
+        };
+    }
+
+    private TacticalAction InvalidAction()
+    {
+        return new TacticalAction
+        {
+            type = TacticalActionType.Hold,
+            target = null,
+            position = Vector2Int.zero,
+            score = float.MinValue,
+            shotQuality = ShotQuality.Blocked
+        };
+    }
+
+    private void ApplyAction(GameUnit enemy, TacticalAction action)
+    {
+        if (enemy == null || enemy.IsDead || enemy.IsBroken)
+            return;
+
+        switch (action.type)
+        {
+            case TacticalActionType.Hold:
+                enemy.SetOrder(OrderType.March);
+                break;
+
+            case TacticalActionType.Shoot:
+                enemy.SetOrder(OrderType.Shoot);
+                enemy.QueueAttack(action.target, false);
+                break;
+
+            case TacticalActionType.MoveToShootingPosition:
+            case TacticalActionType.MoveToLinePosition:
+            case TacticalActionType.MoveTowards:
+                enemy.SetOrder(OrderType.March);
+                enemy.QueueMove(action.position, false);
+                break;
+
+            case TacticalActionType.Charge:
+                enemy.SetOrder(OrderType.Charge);
+
+                if (enemy.IsAdjacentTo(action.target))
+                    enemy.QueueAttack(action.target, false);
+                else if (action.position != enemy.GridPosition)
+                    enemy.QueueMove(action.position, false);
+
+                break;
+
+            case TacticalActionType.Flank:
+                enemy.SetOrder(OrderType.March);
+
+                if (action.position != enemy.GridPosition)
+                    enemy.QueueMove(action.position, false);
+
+                break;
+        }
+    }
+
+    private float EvaluateArmyAdvantage(List<GameUnit> enemies, List<GameUnit> players)
+    {
+        float enemyPower = EvaluateArmyPower(enemies);
+        float playerPower = EvaluateArmyPower(players);
+
+        if (playerPower <= 0.01f)
+            return 99f;
+
+        return enemyPower / playerPower;
+    }
+
+    private float EvaluateArmyPower(List<GameUnit> units)
+    {
+        float total = 0f;
+
+        if (units == null)
+            return total;
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            GameUnit unit = units[i];
+
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
+            if (unit.Stats == null) continue;
+
+            float power = unit.CurrentSize;
+            power += unit.CurrentMorale * 0.5f;
+            power += unit.Stats.meleeDamage * 3f;
+
+            if (unit.Stats.canShoot)
+            {
+                power += unit.Stats.rangedDamage * 4f;
+                power += unit.GetCurrentShootRange() * 5f;
+                power += unit.CurrentAmmo * 0.2f;
+            }
+
+            if (unit.Stats.isCavalry)
+                power *= 1.15f;
+
+            if (unit.Stats.isCannon)
+                power *= 1.25f;
+
+            total += Mathf.Max(0f, power);
+        }
+
+        return total;
+    }
+
+    private bool ShouldCommitToAttack(List<GameUnit> enemies, List<GameUnit> players, float armyAdvantage)
+    {
+        if (players == null || players.Count == 0)
+            return false;
+
+        if (armyAdvantage >= allOutAttackAdvantageThreshold)
+            return true;
+
+        float totalThreat = 0f;
+
+        for (int i = 0; i < enemies.Count; i++)
+            totalThreat += EvaluateLocalThreat(enemies[i], players);
+
+        float averageThreat = enemies.Count > 0 ? totalThreat / enemies.Count : 0f;
+        return averageThreat >= highThreatThreshold;
+    }
+
+    private float EvaluateLocalThreat(GameUnit enemy, List<GameUnit> players)
+    {
+        if (enemy == null || players == null)
+            return 0f;
+
+        float threat = 0f;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            GameUnit player = players[i];
+
+            if (player == null) continue;
+            if (player.IsDead) continue;
+            if (player.IsBroken) continue;
+            if (player.Stats == null) continue;
+
+            float distance = Vector2Int.Distance(enemy.GridPosition, player.GridPosition);
+
+            if (distance > threatScanRadius)
+                continue;
+
+            float distanceFactor = Mathf.Clamp01(1f - distance / Mathf.Max(1f, threatScanRadius));
+            float unitThreat = player.CurrentSize * 0.25f;
+            unitThreat += player.CurrentMorale * 0.15f;
+            unitThreat += player.Stats.meleeDamage * 1.5f;
+
+            if (player.Stats.canShoot)
+            {
+                unitThreat += player.Stats.rangedDamage * 2f;
+
+                if (distance <= player.GetCurrentShootRange())
+                    unitThreat += 25f;
+            }
+
+            if (player.Stats.isCavalry)
+                unitThreat += 15f;
+
+            if (player.Stats.isCannon)
+                unitThreat += 25f;
+
+            threat += unitThreat * distanceFactor;
+        }
+
+        return threat;
+    }
+
+    private float GetUnitAggression(GameUnit enemy, float armyAdvantage, float localThreat, bool allOutAttack)
+    {
+        float aggression = globalAggression;
+
+        if (armyAdvantage >= allOutAttackAdvantageThreshold)
+            aggression += 0.2f;
+
+        if (localThreat >= highThreatThreshold)
+            aggression += 0.2f;
+
+        if (allOutAttack)
+            aggression += 0.15f;
+
+        if (enemy != null && enemy.Stats != null)
+        {
+            if (enemy.Stats.isCavalry)
+                aggression += cavalryAggressionBonus;
+
+            if (enemy.Stats.isCannon)
+                aggression -= 0.4f;
+
+            if (enemy.Stats.canShoot)
+                aggression -= 0.45f;
+
+            if (enemy.CurrentMorale < enemy.Stats.lowMoraleThreshold)
+                aggression -= 0.2f;
+        }
+
+        return Mathf.Clamp01(aggression);
+    }
+
+    private float EvaluateTargetPriority(GameUnit attacker, GameUnit target)
+    {
+        if (attacker == null || target == null || target.Stats == null)
+            return 0f;
+
+        float score = 0f;
+        float distance = Vector2Int.Distance(attacker.GridPosition, target.GridPosition);
+
+        score += Mathf.Max(0f, 12f - distance) * 2f;
+
+        float sizeLost = 1f - ((float)target.CurrentSize / Mathf.Max(1, target.Stats.unitSize));
+        score += sizeLost * 25f;
+
+        float moraleLost = 1f - ((float)target.CurrentMorale / Mathf.Max(1, target.Stats.maxMorale));
+        score += moraleLost * 20f;
+
+        if (target.Stats.canShoot)
+            score += 12f;
+
+        if (target.Stats.isCannon)
+            score += 18f;
+
+        if (target.Stats.isCavalry)
+            score += 10f;
+
+        if (target.CurrentMorale < target.Stats.lowMoraleThreshold)
+            score += 12f;
+
+        return score;
+    }
+
+    private bool TryFindBestShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos, out ShotQuality bestQuality, out float bestUtility)
+    {
+        bestPos = enemy.GridPosition;
+        bestQuality = ShotQuality.Blocked;
+        bestUtility = float.MinValue;
+
+        int moveRange = grid.GetMovementBudgetForUnit(enemy);
+        bool found = false;
+
+        for (int x = -moveRange; x <= moveRange; x++)
+        {
+            for (int y = -moveRange; y <= moveRange; y++)
+            {
+                Vector2Int candidate = new Vector2Int(enemy.GridPosition.x + x, enemy.GridPosition.y + y);
+
+                if (!IsValidMoveCandidate(enemy, candidate))
+                    continue;
+
+                int travelCost = GetPathTravelCost(enemy, candidate);
+                if (travelCost == int.MaxValue || travelCost > moveRange)
+                    continue;
+
+                ShotQuality quality = EvaluateShotQuality(enemy, candidate, target);
+                if (quality == ShotQuality.Blocked)
+                    continue;
+
+                float distance = Vector2Int.Distance(candidate, target.GridPosition);
+                float terrainScore = GetShootingTerrainScore(candidate);
+                float qualityScore = quality == ShotQuality.Clean ? 25f : 6f;
+                float rangeFit = Mathf.Max(0f, enemy.Stats.shootRange + grid.GetShootRangeBonusAt(candidate) - distance);
+
+                float utility = qualityScore + terrainScore * 5f + rangeFit * 2f - travelCost * 1.5f;
+
+                if (enemy.Stats.isCannon)
+                {
+                    float desiredPenalty = Mathf.Abs(distance - cannonDesiredDistance) * 2f;
+                    utility += cannonDistancePreference * 15f - desiredPenalty;
+                }
+
+                if (utility > bestUtility)
+                {
+                    bestUtility = utility;
+                    bestPos = candidate;
+                    bestQuality = quality;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    private bool TryFindBestLineHoldingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos, out float bestUtility)
+    {
+        bestPos = enemy.GridPosition;
+        bestUtility = float.MinValue;
+
+        int moveRange = grid.GetMovementBudgetForUnit(enemy);
+        int preferredDistance = enemy.Stats.isCannon ? cannonDesiredDistance : desiredLineDistance;
+        bool found = false;
+
+        for (int x = -moveRange; x <= moveRange; x++)
+        {
+            for (int y = -moveRange; y <= moveRange; y++)
+            {
+                Vector2Int candidate = new Vector2Int(enemy.GridPosition.x + x, enemy.GridPosition.y + y);
+
+                if (!IsValidMoveCandidate(enemy, candidate))
+                    continue;
+
+                int travelCost = GetPathTravelCost(enemy, candidate);
+                if (travelCost == int.MaxValue || travelCost > moveRange)
+                    continue;
+
+                if (grid.HasAdjacentEnemyForTeam(candidate, enemy.TeamId))
+                    continue;
+
+                float distance = Vector2Int.Distance(candidate, target.GridPosition);
+                float distanceFit = Mathf.Max(0f, 18f - Mathf.Abs(distance - preferredDistance) * 3f);
+                float terrainScore = GetShootingTerrainScore(candidate);
+                float cohesionScore = CountNearbyAllies(enemy, candidate, 3) * 4f;
+
+                float utility = distanceFit + terrainScore * 4f + cohesionScore - travelCost;
+
+                if (enemy.Stats.isCannon)
+                    utility += cannonDistancePreference * 12f;
+
+                if (utility > bestUtility)
+                {
+                    bestUtility = utility;
+                    bestPos = candidate;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    private int CountNearbyAllies(GameUnit unit, Vector2Int position, int radius)
+    {
+        int count = 0;
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit other = GameUnit.AllUnits[i];
+
+            if (other == null) continue;
+            if (other == unit) continue;
+            if (other.IsDead) continue;
+            if (other.IsBroken) continue;
+            if (other.TeamId != unit.TeamId) continue;
+
+            int distance = Mathf.Abs(other.GridPosition.x - position.x) + Mathf.Abs(other.GridPosition.y - position.y);
+
+            if (distance <= radius)
+                count++;
+        }
+
+        return count;
+    }
+
+    private bool CanReachAdjacentToTarget(GameUnit enemy, GameUnit target, out Vector2Int attackTile)
+    {
+        attackTile = enemy.GridPosition;
+
+        if (!grid.TryGetFreeAdjacentTile(target.GridPosition, enemy.GridPosition, out attackTile))
+            return false;
+
+        int travelCost = GetPathTravelCost(enemy, attackTile);
+
+        if (travelCost == int.MaxValue)
+            return false;
+
+        return travelCost <= grid.GetMovementBudgetForUnit(enemy);
+    }
+
+    private bool IsValidMoveCandidate(GameUnit enemy, Vector2Int candidate)
+    {
+        if (!grid.IsInside(candidate))
+            return false;
+
+        if (!grid.IsWalkable(candidate))
+            return false;
+
+        GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
+        if (unitAtCandidate != null && unitAtCandidate != enemy)
+            return false;
+
+        return true;
     }
 
     private bool TryFindBestFlankingTile(GameUnit enemy, GameUnit target, out Vector2Int bestTile)
     {
-        bestTile = enemy != null ? enemy.GridPosition : Vector2Int.zero;
-
-        if (enemy == null || target == null || grid == null)
-            return false;
+        bestTile = enemy.GridPosition;
 
         Vector2Int[] neighbours = grid.GetNeighbours4(target.GridPosition);
 
@@ -293,14 +821,7 @@ public class EnemyAIManager : MonoBehaviour
         {
             Vector2Int candidate = neighbours[i];
 
-            if (!grid.IsInside(candidate))
-                continue;
-
-            if (!grid.IsWalkable(candidate))
-                continue;
-
-            GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
-            if (unitAtCandidate != null && unitAtCandidate != enemy)
+            if (!IsValidMoveCandidate(enemy, candidate))
                 continue;
 
             AttackDirection attackDirection = GetAttackDirectionFromPosition(candidate, target);
@@ -312,10 +833,9 @@ public class EnemyAIManager : MonoBehaviour
             if (travelCost == int.MaxValue)
                 continue;
 
-            float distanceFromEnemy = Vector2Int.Distance(enemy.GridPosition, candidate);
             float terrainScore = GetMovementTerrainScore(candidate);
             float directionScore = attackDirection == AttackDirection.Rear ? -2f : -1f;
-            float score = travelCost + distanceFromEnemy * 0.25f - terrainScore + directionScore;
+            float score = travelCost - terrainScore + directionScore;
 
             if (score < bestScore)
             {
@@ -330,9 +850,6 @@ public class EnemyAIManager : MonoBehaviour
 
     private AttackDirection GetAttackDirectionFromPosition(Vector2Int attackerPosition, GameUnit defender)
     {
-        if (defender == null)
-            return AttackDirection.Front;
-
         Vector2Int delta = attackerPosition - defender.GridPosition;
 
         if (delta == Vector2Int.zero)
@@ -359,10 +876,8 @@ public class EnemyAIManager : MonoBehaviour
 
     private bool IsFlankRouteReasonable(GameUnit enemy, GameUnit target, Vector2Int flankTile)
     {
-        if (enemy == null || target == null || grid == null)
-            return false;
-
         int flankCost = GetPathTravelCost(enemy, flankTile);
+
         if (flankCost == int.MaxValue)
             return false;
 
@@ -370,6 +885,7 @@ public class EnemyAIManager : MonoBehaviour
             return true;
 
         int normalCost = GetPathTravelCost(enemy, normalAttackTile);
+
         if (normalCost == int.MaxValue)
             return true;
 
@@ -394,19 +910,16 @@ public class EnemyAIManager : MonoBehaviour
 
     private ShotQuality EvaluateShotQuality(GameUnit shooter, Vector2Int shooterPosition, GameUnit target)
     {
-        if (shooter == null || target == null || grid == null)
-            return ShotQuality.Blocked;
-
         if (!CanShootTargetFromPosition(shooter, shooterPosition, target))
             return ShotQuality.Blocked;
 
         List<Vector2Int> line = GetLinePoints(shooterPosition, target.GridPosition);
-
         int alliesOnLine = 0;
 
         for (int i = 1; i < line.Count - 1; i++)
         {
             GameUnit unitOnLine = grid.GetUnitAt(line[i]);
+
             if (unitOnLine == null)
                 continue;
 
@@ -429,76 +942,8 @@ public class EnemyAIManager : MonoBehaviour
         return ShotQuality.Clean;
     }
 
-    private bool TryFindBestCleanShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos)
-    {
-        return TryFindBestShootingPositionByQuality(enemy, target, ShotQuality.Clean, out bestPos);
-    }
-
-    private bool TryFindBestRiskyShootingPosition(GameUnit enemy, GameUnit target, out Vector2Int bestPos)
-    {
-        return TryFindBestShootingPositionByQuality(enemy, target, ShotQuality.RiskyThroughOneAlly, out bestPos);
-    }
-
-    private bool TryFindBestShootingPositionByQuality(GameUnit enemy, GameUnit target, ShotQuality requiredQuality, out Vector2Int bestPos)
-    {
-        bestPos = enemy.GridPosition;
-
-        if (enemy == null || target == null || enemy.Stats == null || grid == null)
-            return false;
-
-        int moveRange = grid.GetMovementBudgetForUnit(enemy);
-        float bestScore = float.MaxValue;
-        bool found = false;
-
-        for (int x = -moveRange; x <= moveRange; x++)
-        {
-            for (int y = -moveRange; y <= moveRange; y++)
-            {
-                Vector2Int candidate = new Vector2Int(enemy.GridPosition.x + x, enemy.GridPosition.y + y);
-
-                if (!grid.IsInside(candidate))
-                    continue;
-
-                if (!grid.IsWalkable(candidate))
-                    continue;
-
-                GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
-                if (unitAtCandidate != null && unitAtCandidate != enemy)
-                    continue;
-
-                int travelCost = GetPathTravelCost(enemy, candidate);
-                if (travelCost == int.MaxValue)
-                    continue;
-
-                if (travelCost > moveRange)
-                    continue;
-
-                ShotQuality quality = EvaluateShotQuality(enemy, candidate, target);
-
-                if (quality != requiredQuality)
-                    continue;
-
-                float targetDist = Vector2Int.Distance(candidate, target.GridPosition);
-                float terrainScore = GetShootingTerrainScore(candidate);
-                float score = travelCost + targetDist * 0.25f - terrainScore;
-
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestPos = candidate;
-                    found = true;
-                }
-            }
-        }
-
-        return found;
-    }
-
     private int GetPathTravelCost(GameUnit mover, Vector2Int target)
     {
-        if (mover == null || grid == null)
-            return int.MaxValue;
-
         if (target == mover.GridPosition)
             return 0;
 
@@ -529,6 +974,7 @@ public class EnemyAIManager : MonoBehaviour
     private float GetShootingTerrainScore(Vector2Int position)
     {
         Tile tile = grid.GetTileAt(position);
+
         if (tile == null)
             return 0f;
 
@@ -544,7 +990,7 @@ public class EnemyAIManager : MonoBehaviour
             score += 0.25f;
 
         if (tile.TerrainType == TerrainType.ShallowWater)
-            score -= 1.0f;
+            score -= 1f;
 
         if (tile.TerrainType == TerrainType.RoughTerrain)
             score -= 0.25f;
@@ -552,32 +998,11 @@ public class EnemyAIManager : MonoBehaviour
         return score;
     }
 
-    private GameUnit FindAdjacentEnemy(GameUnit unit)
-    {
-        if (unit == null || grid == null)
-            return null;
-
-        Vector2Int[] neighbours = grid.GetNeighbours4(unit.GridPosition);
-
-        for (int i = 0; i < neighbours.Length; i++)
-        {
-            GameUnit other = grid.GetUnitAt(neighbours[i]);
-
-            if (other != null && !other.IsDead && !other.IsBroken && other.TeamId != unit.TeamId)
-                return other;
-        }
-
-        return null;
-    }
-
     private Vector2Int MoveTowards(GameUnit mover, Vector2Int target)
     {
-        if (mover == null || grid == null)
-            return target;
-
         int moveRange = grid.GetMovementBudgetForUnit(mover);
         Vector2Int best = mover.GridPosition;
-        float bestDist = Vector2Int.Distance(mover.GridPosition, target);
+        float bestScore = float.MaxValue;
 
         for (int x = -moveRange; x <= moveRange; x++)
         {
@@ -585,32 +1010,21 @@ public class EnemyAIManager : MonoBehaviour
             {
                 Vector2Int candidate = new Vector2Int(mover.GridPosition.x + x, mover.GridPosition.y + y);
 
-                if (!grid.IsInside(candidate))
-                    continue;
-
-                if (!grid.IsWalkable(candidate))
-                    continue;
-
-                GameUnit unitAtCandidate = grid.GetUnitAt(candidate);
-                if (unitAtCandidate != null && unitAtCandidate != mover)
+                if (!IsValidMoveCandidate(mover, candidate))
                     continue;
 
                 int travelCost = GetPathTravelCost(mover, candidate);
-                if (travelCost == int.MaxValue)
-                    continue;
 
-                if (travelCost > moveRange)
+                if (travelCost == int.MaxValue || travelCost > moveRange)
                     continue;
 
                 float distToTarget = Vector2Int.Distance(candidate, target);
                 float terrainScore = GetMovementTerrainScore(candidate);
-                float score = distToTarget - terrainScore;
-
-                float bestScore = bestDist - GetMovementTerrainScore(best);
+                float score = distToTarget + travelCost * 0.25f - terrainScore;
 
                 if (score < bestScore)
                 {
-                    bestDist = distToTarget;
+                    bestScore = score;
                     best = candidate;
                 }
             }
@@ -622,6 +1036,7 @@ public class EnemyAIManager : MonoBehaviour
     private float GetMovementTerrainScore(Vector2Int position)
     {
         Tile tile = grid.GetTileAt(position);
+
         if (tile == null)
             return 0f;
 

@@ -11,6 +11,8 @@ public class GameUnit : MonoBehaviour
         Routed
     }
 
+    private const int ManualRetreatCooldownTurns = 2;
+
     public static readonly List<GameUnit> AllUnits = new List<GameUnit>();
 
     [Header("Visuals")]
@@ -65,10 +67,13 @@ public class GameUnit : MonoBehaviour
     private int currentMorale;
     private int currentAmmo;
     private int tilesMovedThisTurn;
+    private int manualRetreatAvailableTurn = 0;
     private bool tookDamageThisTurn;
     private bool actedThisTurn;
     private bool isBeingRemoved;
+    private bool reachedMapEdgeWhileRouting;
     private GridManager grid;
+    private TurnManager turnManager;
 
     private void OnEnable()
     {
@@ -78,12 +83,15 @@ public class GameUnit : MonoBehaviour
 
     private void OnDisable()
     {
+        StopMovementSound();
+
         AllUnits.Remove(this);
     }
 
     private void Awake()
     {
         grid = FindObjectOfType<GridManager>();
+        turnManager = FindObjectOfType<TurnManager>();
 
         if (stats == null)
         {
@@ -115,6 +123,45 @@ public class GameUnit : MonoBehaviour
         SnapToGrid(startPos);
     }
 
+    private int GetCurrentTurnNumber()
+    {
+        return turnManager != null ? turnManager.TurnNumber : 0;
+    }
+
+    public bool CanUseManualRetreat()
+    {
+        if (stats == null) return false;
+        if (IsDead || IsBroken || isBeingRemoved) return false;
+
+        return GetCurrentTurnNumber() >= manualRetreatAvailableTurn;
+    }
+
+    public int GetManualRetreatCooldownRemaining()
+    {
+        return Mathf.Max(0, manualRetreatAvailableTurn - GetCurrentTurnNumber());
+    }
+
+    public bool CanApplyOrder(OrderType order)
+    {
+        if (stats == null) return false;
+        if (IsDead || IsBroken || isBeingRemoved) return false;
+        if (order == OrderType.Shoot && !stats.canShoot) return false;
+        if (order == OrderType.Charge && !stats.canCharge) return false;
+        if (order == OrderType.Retreat && !CanUseManualRetreat()) return false;
+
+        return true;
+    }
+
+    private void RegisterManualRetreatExecuted()
+    {
+        manualRetreatAvailableTurn = GetCurrentTurnNumber() + ManualRetreatCooldownTurns + 1;
+
+        currentOrder = OrderType.March;
+        plannedCommands.Clear();
+
+        Debug.Log($"{name} used manual retreat. Available again on turn {manualRetreatAvailableTurn}.");
+    }
+
     public void BeginTurnExecution()
     {
         if (IsDead || isBeingRemoved)
@@ -124,7 +171,7 @@ public class GameUnit : MonoBehaviour
         actedThisTurn = false;
         tookDamageThisTurn = false;
 
-        if (IsBroken && grid != null && grid.IsAtMapEdge(GridPosition))
+        if (IsBroken && reachedMapEdgeWhileRouting && grid != null && grid.IsAtMapEdge(GridPosition))
         {
             Debug.Log($"{name} routed off the battlefield.");
             Die(UnitRemovalReason.Routed);
@@ -136,6 +183,12 @@ public class GameUnit : MonoBehaviour
         if (IsDead || isBeingRemoved || stats == null)
             return;
 
+        if (IsBroken)
+        {
+            ResolveBrokenMoraleRecovery();
+            return;
+        }
+
         int recovery = tookDamageThisTurn ? 0 : stats.passiveMoraleRecovery;
 
         if (!actedThisTurn && !tookDamageThisTurn)
@@ -143,16 +196,35 @@ public class GameUnit : MonoBehaviour
 
         if (recovery > 0)
             currentMorale = Mathf.Clamp(currentMorale + recovery, 0, stats.maxMorale);
+    }
 
-        if (IsBroken && currentMorale >= stats.brokenMoraleThreshold)
-        {
-            IsBroken = false;
+    private void ResolveBrokenMoraleRecovery()
+    {
+        if (stats == null)
+            return;
 
-            if (brokenOverlay != null)
-                brokenOverlay.SetActive(false);
+        if (!tookDamageThisTurn && stats.brokenMoraleRecoveryPerTurn > 0)
+            currentMorale = Mathf.Clamp(currentMorale + stats.brokenMoraleRecoveryPerTurn, 0, stats.maxMorale);
 
-            Debug.Log($"{name} recovered from broken state.");
-        }
+        if (tookDamageThisTurn)
+            return;
+
+        if (currentMorale < stats.brokenMoraleThreshold)
+            return;
+
+        if (UnityEngine.Random.value > stats.brokenRallyChance)
+            return;
+
+        IsBroken = false;
+        reachedMapEdgeWhileRouting = false;
+        currentOrder = OrderType.March;
+        currentMorale = Mathf.Max(currentMorale + stats.rallyMoraleGain, stats.rallyMinimumMorale);
+        currentMorale = Mathf.Clamp(currentMorale, 0, stats.maxMorale);
+
+        if (brokenOverlay != null)
+            brokenOverlay.SetActive(false);
+
+        Debug.Log($"{name} rallied and returned to battle.");
     }
 
     public void SetSelected(bool selected)
@@ -163,19 +235,20 @@ public class GameUnit : MonoBehaviour
             selectionRing.SetActive(IsSelected);
     }
 
-    public void SetOrder(OrderType order)
+    public bool TrySetOrder(OrderType order)
     {
-        if (IsBroken || isBeingRemoved)
-            return;
+        if (!CanApplyOrder(order))
+        {
+            if (order == OrderType.Retreat)
+                Debug.Log($"{name} cannot retreat. Cooldown remaining: {GetManualRetreatCooldownRemaining()} turn(s).");
+            else
+                Debug.Log($"{name} cannot apply order: {order}");
 
-        if (order == OrderType.Shoot && !stats.canShoot)
-            return;
-
-        if (order == OrderType.Charge && !stats.canCharge)
-            return;
+            return false;
+        }
 
         if (currentOrder == order)
-            return;
+            return true;
 
         if (currentOrder == OrderType.Shoot && order != OrderType.Shoot && SoundManager.Instance != null)
             SoundManager.Instance.StopRangedLoopForUnit(this);
@@ -186,6 +259,12 @@ public class GameUnit : MonoBehaviour
             RemoveAttackCommandsFromQueue();
 
         Debug.Log($"{name} -> Order changed to: {currentOrder}");
+        return true;
+    }
+
+    public void SetOrder(OrderType order)
+    {
+        TrySetOrder(order);
     }
 
     public int GetMovementRange()
@@ -307,8 +386,7 @@ public class GameUnit : MonoBehaviour
             return;
         }
 
-        GridPathfinder pathfinder = new GridPathfinder(grid);
-        List<Vector2Int> path = pathfinder.FindPath(GridPosition, desiredTargetGrid, this);
+        List<Vector2Int> path = BuildDirectOrFallbackPath(desiredTargetGrid);
 
         if (path == null || path.Count == 0)
         {
@@ -320,10 +398,65 @@ public class GameUnit : MonoBehaviour
         {
             StopCoroutine(_moveRoutine);
             _moveRoutine = null;
+            StopMovementSound();
         }
 
         actedThisTurn = true;
         _moveRoutine = StartCoroutine(FollowPath(path, onComplete));
+    }
+
+    private List<Vector2Int> BuildDirectOrFallbackPath(Vector2Int desiredTargetGrid)
+    {
+        if (grid == null)
+            return null;
+
+        List<Vector2Int> directPath = BuildDirectLinePath(GridPosition, desiredTargetGrid);
+
+        if (IsPathUsable(directPath))
+            return directPath;
+
+        GridPathfinder pathfinder = new GridPathfinder(grid);
+        return pathfinder.FindPath(GridPosition, desiredTargetGrid, this);
+    }
+
+    private List<Vector2Int> BuildDirectLinePath(Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> line = GetLinePoints(start, end);
+
+        if (line.Count > 0 && line[0] == start)
+            line.RemoveAt(0);
+
+        return line;
+    }
+
+    private bool IsPathUsable(List<Vector2Int> path)
+    {
+        if (path == null || path.Count == 0)
+            return false;
+
+        Vector2Int previous = GridPosition;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector2Int p = path[i];
+
+            if (!grid.IsInside(p))
+                return false;
+
+            if (!grid.IsWalkable(p))
+                return false;
+
+            if (grid.GetMovementCost(previous, p, this) == int.MaxValue)
+                return false;
+
+            GameUnit unitAt = grid.GetUnitAt(p);
+            if (unitAt != null && unitAt != this)
+                return false;
+
+            previous = p;
+        }
+
+        return true;
     }
 
     public bool IsAdjacentTo(GameUnit target)
@@ -393,8 +526,9 @@ public class GameUnit : MonoBehaviour
         actedThisTurn = true;
 
         Debug.Log($"{name} auto melee: targets={enemies.Count}, totalRaw={rawTotalDamage}, perTargetRaw={damagePerTarget}");
+
         if (SoundManager.Instance != null)
-        SoundManager.Instance.PlayMelee(transform.position, enemies.Count);
+            SoundManager.Instance.PlayMelee(transform.position, enemies.Count);
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -498,7 +632,7 @@ public class GameUnit : MonoBehaviour
         Debug.Log($"{name} fired: ammo -{ammoSpent}, remaining: {currentAmmo}");
 
         if (SoundManager.Instance != null)
-        SoundManager.Instance.RegisterExecutedRangedShot(this, target);
+            SoundManager.Instance.RegisterExecutedRangedShot(this, target);
 
         actedThisTurn = true;
 
@@ -528,8 +662,7 @@ public class GameUnit : MonoBehaviour
 
     public void TakeDamage(int dmg)
     {
-        currentSize -= dmg;
-        Debug.Log($"{name} took {dmg} damage. Current size: {currentSize}");
+        ApplyCasualties(dmg, "damage");
 
         if (currentSize <= 0)
             Die();
@@ -544,8 +677,7 @@ public class GameUnit : MonoBehaviour
         int modifiedRawDamage = ApplyFlankingDamageModifier(attacker, rawDamage, attackDirection);
         int finalDamage = ApplyArmorReduction(modifiedRawDamage, false);
 
-        currentSize -= finalDamage;
-
+        ApplyCasualties(finalDamage, "melee damage");
         ApplyMoraleLoss(finalDamage);
         ApplyFlankingMoralePenalty(attacker, attackDirection);
 
@@ -618,13 +750,26 @@ public class GameUnit : MonoBehaviour
         int damageAfterTerrain = ApplyTerrainDefenseToRangedDamage(rawDamage);
         int finalDamage = ApplyArmorReduction(damageAfterTerrain, true);
 
-        currentSize -= finalDamage;
+        ApplyCasualties(finalDamage, "ranged damage");
         ApplyMoraleLoss(finalDamage);
 
         Debug.Log($"{name} took {finalDamage} ranged damage. Current size: {currentSize}, morale: {currentMorale}");
 
         if (currentSize <= 0)
             Die();
+    }
+
+    private void ApplyCasualties(int casualties, string source)
+    {
+        int safeCasualties = Mathf.Max(0, casualties);
+        int previousSize = currentSize;
+
+        currentSize = Mathf.Max(0, currentSize - safeCasualties);
+
+        int actualLosses = previousSize - currentSize;
+
+        if (actualLosses > 0)
+            Debug.Log($"{name} lost {actualLosses} men from {source}. Current size: {currentSize}");
     }
 
     private int ApplyArmorReduction(int rawDamage, bool againstRanged)
@@ -659,9 +804,12 @@ public class GameUnit : MonoBehaviour
     {
         tookDamageThisTurn = true;
 
+        if (stats == null)
+            return;
+
         float cohesionModifier = 1f;
 
-        if (grid != null && stats != null)
+        if (grid != null)
             cohesionModifier = grid.GetMoraleCohesionModifier(this);
 
         int moraleLoss = Mathf.RoundToInt(finalDamage * stats.moraleDamagePerLostUnit * cohesionModifier);
@@ -680,10 +828,13 @@ public class GameUnit : MonoBehaviour
 
     private void BreakUnit()
     {
+        StopMovementSound();
+
         if (SoundManager.Instance != null)
             SoundManager.Instance.StopRangedLoopForUnit(this);
 
         IsBroken = true;
+        reachedMapEdgeWhileRouting = false;
         currentOrder = OrderType.Retreat;
         RemoveAttackCommandsFromQueue();
         plannedCommands.Clear();
@@ -699,6 +850,8 @@ public class GameUnit : MonoBehaviour
     {
         if (isBeingRemoved)
             return;
+
+        StopMovementSound();
 
         if (SoundManager.Instance != null)
             SoundManager.Instance.StopRangedLoopForUnit(this);
@@ -735,9 +888,10 @@ public class GameUnit : MonoBehaviour
         Destroy(gameObject);
     }
 
-        public void ClearPlannedAction()
+    public void ClearPlannedAction()
     {
         plannedCommands.Clear();
+        StopMovementSound();
 
         if (SoundManager.Instance != null)
             SoundManager.Instance.StopRangedLoopForUnit(this);
@@ -747,6 +901,12 @@ public class GameUnit : MonoBehaviour
     {
         if (IsBroken || isBeingRemoved)
             return;
+
+        if (currentOrder == OrderType.Retreat && !CanUseManualRetreat())
+        {
+            Debug.Log($"{name} cannot queue retreat move. Cooldown remaining: {GetManualRetreatCooldownRemaining()} turn(s).");
+            return;
+        }
 
         if (!append)
             plannedCommands.Clear();
@@ -824,14 +984,19 @@ public class GameUnit : MonoBehaviour
                         yield break;
 
                     Vector2Int startPos = GridPosition;
+                    OrderType orderAtMoveStart = currentOrder;
+
+                    int spentCost = 0;
 
                     Vector2Int stepTarget = grid != null
-                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out _)
+                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out spentCost)
                         : cmd.targetGridPosition;
 
-                    int movementSpent = 0;
-                    if (grid != null)
-                        movementSpent = grid.GetTravelCostAlongLine(this, startPos, stepTarget);
+                    if (stepTarget == startPos)
+                        yield break;
+
+                    if (spentCost == int.MaxValue)
+                        yield break;
 
                     bool finished = false;
                     MoveToGrid(stepTarget, () => finished = true);
@@ -839,7 +1004,15 @@ public class GameUnit : MonoBehaviour
                     while (!finished)
                         yield return null;
 
-                    remainingMovement -= movementSpent;
+                    bool moved = GridPosition != startPos;
+
+                    if (orderAtMoveStart == OrderType.Retreat && moved)
+                    {
+                        RegisterManualRetreatExecuted();
+                        yield break;
+                    }
+
+                    remainingMovement -= spentCost;
                     remainingMovement = Mathf.Max(0, remainingMovement);
 
                     if (GridPosition == cmd.targetGridPosition)
@@ -897,6 +1070,9 @@ public class GameUnit : MonoBehaviour
                         Vector2Int startPos = GridPosition;
                         Vector2Int stepTarget = grid.GetReachablePointAlongLine(this, startPos, attackTile, remainingMovement, out int spentCost);
 
+                        if (stepTarget == startPos || spentCost == int.MaxValue)
+                            yield break;
+
                         bool finished = false;
                         MoveToGrid(stepTarget, () => finished = true);
 
@@ -925,21 +1101,52 @@ public class GameUnit : MonoBehaviour
             yield break;
 
         if (grid.IsAtMapEdge(GridPosition))
+        {
+            reachedMapEdgeWhileRouting = true;
             yield break;
+        }
 
-        Vector2Int retreatTarget = grid.GetNearestEdgePosition(GridPosition);
         int remainingMovement = grid.GetMovementBudgetForUnit(this);
+        int safety = 0;
 
-        Vector2Int stepTarget = grid.GetReachablePointAlongLine(this, GridPosition, retreatTarget, remainingMovement, out _);
+        while (remainingMovement > 0 && safety < 16)
+        {
+            safety++;
 
-        if (stepTarget == GridPosition)
-            yield break;
+            if (grid.IsAtMapEdge(GridPosition))
+            {
+                reachedMapEdgeWhileRouting = true;
+                yield break;
+            }
 
-        bool finished = false;
-        MoveToGrid(stepTarget, () => finished = true);
+            Vector2Int startPos = GridPosition;
+            Vector2Int nextStep = grid.GetBestRoutingStep(this);
 
-        while (!finished)
-            yield return null;
+            if (nextStep == startPos)
+                yield break;
+
+            int stepCost = grid.GetMovementCost(startPos, nextStep, this);
+
+            if (stepCost == int.MaxValue)
+                yield break;
+
+            if (stepCost > remainingMovement)
+                yield break;
+
+            bool finished = false;
+            MoveToGrid(nextStep, () => finished = true);
+
+            while (!finished)
+                yield return null;
+
+            if (GridPosition == startPos)
+                yield break;
+
+            remainingMovement -= stepCost;
+        }
+
+        if (grid.IsAtMapEdge(GridPosition))
+            reachedMapEdgeWhileRouting = true;
     }
 
     public void SetTeam(int newTeamId)
@@ -1002,48 +1209,77 @@ public class GameUnit : MonoBehaviour
     {
         int movementBudget = grid.GetMovementBudgetForUnit(this);
         int spent = 0;
+        bool movementSoundStarted = false;
 
-        for (int i = 0; i < path.Count; i++)
+        try
         {
-            if (stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
-                break;
-
-            Vector2Int target = path[i];
-            int stepCost = grid.GetMovementCost(GridPosition, target, this);
-
-            if (stepCost == int.MaxValue)
-                break;
-
-            if (spent + stepCost > movementBudget)
-                break;
-
-            if (!grid.MoveUnit(this, GridPosition, target))
-                break;
-
-            spent += stepCost;
-            tilesMovedThisTurn++;
-
-            Vector3 start = transform.position;
-            Vector3 end = new Vector3(target.x, target.y, 0f);
-
-            float duration = Mathf.Max(0.01f, stepCost / GetCurrentMoveSpeed());
-            float t = 0f;
-
-            while (t < 1f)
+            for (int i = 0; i < path.Count; i++)
             {
-                t += Time.deltaTime / duration;
-                transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(t));
-                yield return null;
+                if (currentOrder != OrderType.Retreat && !IsBroken && stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
+                    break;
+
+                Vector2Int target = path[i];
+                int stepCost = grid.GetMovementCost(GridPosition, target, this);
+
+                if (stepCost == int.MaxValue)
+                    break;
+
+                if (spent + stepCost > movementBudget)
+                    break;
+
+                if (!grid.MoveUnit(this, GridPosition, target))
+                    break;
+
+                if (!movementSoundStarted)
+                {
+                    StartMovementSound();
+                    movementSoundStarted = true;
+                }
+
+                spent += stepCost;
+                tilesMovedThisTurn++;
+
+                Vector3 start = transform.position;
+                Vector3 end = new Vector3(target.x, target.y, 0f);
+
+                float duration = Mathf.Max(0.01f, stepCost / GetCurrentMoveSpeed());
+                float t = 0f;
+
+                while (t < 1f)
+                {
+                    t += Time.deltaTime / duration;
+                    transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(t));
+                    yield return null;
+                }
+
+                transform.position = end;
+                GridPosition = target;
+
+                if (currentOrder != OrderType.Retreat && !IsBroken && stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
+                    break;
             }
-
-            transform.position = end;
-            GridPosition = target;
-
-            if (stats != null && stats.stopMovementOnEnemyContact && HasAdjacentEnemy())
-                break;
         }
+        finally
+        {
+            StopMovementSound();
+            _moveRoutine = null;
+            onComplete?.Invoke();
+        }
+    }
 
-        _moveRoutine = null;
-        onComplete?.Invoke();
+    private void StartMovementSound()
+    {
+        if (SoundManager.Instance == null)
+            return;
+
+        SoundManager.Instance.StartMovementLoopForUnit(this);
+    }
+
+    private void StopMovementSound()
+    {
+        if (SoundManager.Instance == null)
+            return;
+
+        SoundManager.Instance.StopMovementLoopForUnit(this);
     }
 }

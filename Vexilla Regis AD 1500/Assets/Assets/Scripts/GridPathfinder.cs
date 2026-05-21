@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class GridPathfinder
 {
-    private GridManager grid;
+    private readonly GridManager grid;
 
     public GridPathfinder(GridManager grid)
     {
@@ -26,6 +26,15 @@ public class GridPathfinder
 
     public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target, GameUnit unit)
     {
+        if (grid == null || unit == null)
+            return null;
+
+        if (!grid.IsInside(start) || !grid.IsInside(target))
+            return null;
+
+        if (!grid.IsWalkable(target))
+            return null;
+
         Dictionary<Vector2Int, Node> allNodes = new Dictionary<Vector2Int, Node>();
         List<Node> open = new List<Node>();
         HashSet<Vector2Int> closed = new HashSet<Vector2Int>();
@@ -44,7 +53,7 @@ public class GridPathfinder
             for (int i = 1; i < open.Count; i++)
             {
                 if (open[i].fCost < current.fCost ||
-                   (open[i].fCost == current.fCost && open[i].hCost < current.hCost))
+                    open[i].fCost == current.fCost && open[i].hCost < current.hCost)
                 {
                     current = open[i];
                 }
@@ -56,19 +65,30 @@ public class GridPathfinder
             if (current.pos == target)
                 return RetracePath(current);
 
-            foreach (Vector2Int neighbourPos in grid.GetNeighbours4(current.pos))
+            Vector2Int[] neighbours = grid.GetNeighbours4(current.pos);
+
+            for (int i = 0; i < neighbours.Length; i++)
             {
+                Vector2Int neighbourPos = neighbours[i];
+
                 if (!grid.IsInside(neighbourPos))
                     continue;
 
                 if (closed.Contains(neighbourPos))
                     continue;
 
+                if (!grid.IsWalkable(neighbourPos))
+                    continue;
+
                 GameUnit other = grid.GetUnitAt(neighbourPos);
                 if (other != null && other != unit)
                     continue;
 
-                int moveCost = current.gCost + grid.GetMovementCost(current.pos, neighbourPos, unit);
+                int stepCost = grid.GetMovementCost(current.pos, neighbourPos, unit);
+                if (stepCost == int.MaxValue)
+                    continue;
+
+                int moveCost = current.gCost + stepCost;
 
                 if (!allNodes.TryGetValue(neighbourPos, out Node neighbour))
                 {

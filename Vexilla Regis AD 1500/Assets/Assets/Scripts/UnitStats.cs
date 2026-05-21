@@ -43,6 +43,13 @@ public class UnitStats : ScriptableObject
     [Min(0)] public int passiveMoraleRecovery = 4;
     [Min(0)] public int idleMoraleRecoveryBonus = 6;
 
+    [Header("Routing")]
+    [Min(1)] public int maxManualRetreatTurns = 2;
+    [Min(0)] public int brokenMoraleRecoveryPerTurn = 8;
+    [Range(0f, 1f)] public float brokenRallyChance = 0.25f;
+    [Min(0)] public int rallyMoraleGain = 20;
+    [Min(0)] public int rallyMinimumMorale = 25;
+
     [Header("Morale Cohesion")]
     [Min(1)] public int moraleSupportRadius = 3;
     [Range(0f, 2f)] public float adjacentAllyMoraleLossMultiplier = 0.75f;
@@ -60,6 +67,8 @@ public class UnitStats : ScriptableObject
     [Header("Capabilities")]
     public bool canCharge = true;
     public bool canShoot = false;
+    public bool isInfantry = true;
+    public bool isCavalry = false;
     public bool isCannon = false;
     public bool allowFriendlyFireThroughAlly = false;
 }

@@ -20,6 +20,13 @@ MonoBehaviour:
   meleeDamage: 10
   rangedDamage: 8
   shootRange: 4
+  flankMeleeDamageMultiplier: 1.15
+  rearMeleeDamageMultiplier: 1.3
+  flankMoralePenalty: 4
+  rearMoralePenalty: 8
+  chargeImpactPerTile: 2
+  maxChargeBonus: 20
+  minTilesForChargeBonus: 2
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
   maxMorale: 100
@@ -29,6 +36,11 @@ MonoBehaviour:
   moraleDamagePerLostUnit: 2
   passiveMoraleRecovery: 4
   idleMoraleRecoveryBonus: 6
+  maxManualRetreatTurns: 2
+  brokenMoraleRecoveryPerTurn: 8
+  brokenRallyChance: 0.25
+  rallyMoraleGain: 20
+  rallyMinimumMorale: 25
   moraleSupportRadius: 3
   adjacentAllyMoraleLossMultiplier: 0.75
   nearbyAllyMoraleLossMultiplier: 0.9
@@ -39,4 +51,7 @@ MonoBehaviour:
   ammoPerShot: 10
   canCharge: 1
   canShoot: 0
+  isInfantry: 1
+  isCavalry: 0
+  isCannon: 0
   allowFriendlyFireThroughAlly: 0

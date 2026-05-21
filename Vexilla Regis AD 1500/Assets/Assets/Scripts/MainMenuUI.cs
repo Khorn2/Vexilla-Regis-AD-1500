@@ -24,11 +24,15 @@ public class MainMenuUI : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private OptionsMenuUI optionsMenuUI;
+    [SerializeField] private ScenarioMenuUI scenarioMenuUI;
 
     private void Awake()
     {
         if (optionsMenuUI == null)
             optionsMenuUI = GetComponent<OptionsMenuUI>();
+
+        if (scenarioMenuUI == null)
+            scenarioMenuUI = GetComponent<ScenarioMenuUI>();
 
         ShowMainPanel();
     }
@@ -77,6 +81,12 @@ public class MainMenuUI : MonoBehaviour
 
     private void PlayGame()
     {
+        if (scenarioMenuUI != null)
+        {
+            scenarioMenuUI.OpenScenarioMenu();
+            return;
+        }
+
         SceneManager.LoadScene(gameplaySceneName);
     }
 
@@ -90,6 +100,9 @@ public class MainMenuUI : MonoBehaviour
 
         if (creditsPanel != null)
             creditsPanel.SetActive(false);
+
+        if (scenarioMenuUI != null)
+            scenarioMenuUI.CloseScenarioMenu();
     }
 
     private void ShowOptionsPanel()
@@ -99,6 +112,9 @@ public class MainMenuUI : MonoBehaviour
 
         if (creditsPanel != null)
             creditsPanel.SetActive(false);
+
+        if (scenarioMenuUI != null)
+            scenarioMenuUI.CloseScenarioMenu();
 
         if (optionsPanel != null)
             optionsPanel.SetActive(true);
@@ -114,6 +130,9 @@ public class MainMenuUI : MonoBehaviour
 
         if (optionsPanel != null)
             optionsPanel.SetActive(false);
+
+        if (scenarioMenuUI != null)
+            scenarioMenuUI.CloseScenarioMenu();
 
         if (creditsPanel != null)
             creditsPanel.SetActive(true);

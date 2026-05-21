@@ -68,10 +68,13 @@
     <Compile Include="Assets\Assets\Scripts\ScenarioSpawnData.cs" />
     <Compile Include="Assets\Assets\Scripts\EnemyAIManager.cs" />
     <Compile Include="Assets\Assets\Scripts\SelectionManager2D.cs" />
+    <Compile Include="Assets\Assets\Scripts\SelectedScenario.cs" />
+    <Compile Include="Assets\Assets\Scripts\ScenarioSelectionData.cs" />
     <Compile Include="Assets\Assets\Scripts\GridManager.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderBarUI.cs" />
     <Compile Include="Assets\Assets\Scripts\GameSettingsManager.cs" />
     <Compile Include="Assets\Assets\Scripts\UIManager.cs" />
+    <Compile Include="Assets\Assets\Scripts\ScenarioMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\ScoreMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\PlannedCommand.cs" />
     <Compile Include="Assets\Assets\Scripts\OrderType.cs" />

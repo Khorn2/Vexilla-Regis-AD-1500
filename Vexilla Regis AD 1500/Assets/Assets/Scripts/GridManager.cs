@@ -289,6 +289,67 @@ public class GridManager : MonoBehaviour
         return best;
     }
 
+    public Vector2Int GetBestRoutingStep(GameUnit mover)
+    {
+        if (mover == null)
+            return Vector2Int.zero;
+
+        Vector2Int current = mover.GridPosition;
+        Vector2Int edge = GetNearestEdgePosition(current);
+        Vector2Int delta = edge - current;
+
+        List<Vector2Int> candidates = new List<Vector2Int>();
+
+        if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
+        {
+            candidates.Add(new Vector2Int(current.x + (delta.x > 0 ? 1 : -1), current.y));
+
+            if (delta.y != 0)
+                candidates.Add(new Vector2Int(current.x, current.y + (delta.y > 0 ? 1 : -1)));
+
+            candidates.Add(new Vector2Int(current.x, current.y + 1));
+            candidates.Add(new Vector2Int(current.x, current.y - 1));
+        }
+        else
+        {
+            candidates.Add(new Vector2Int(current.x, current.y + (delta.y > 0 ? 1 : -1)));
+
+            if (delta.x != 0)
+                candidates.Add(new Vector2Int(current.x + (delta.x > 0 ? 1 : -1), current.y));
+
+            candidates.Add(new Vector2Int(current.x + 1, current.y));
+            candidates.Add(new Vector2Int(current.x - 1, current.y));
+        }
+
+        Vector2Int best = current;
+        int bestDistance = GetManhattanDistance(current, edge);
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            Vector2Int candidate = candidates[i];
+
+            if (!IsInside(candidate))
+                continue;
+
+            if (!IsWalkable(candidate))
+                continue;
+
+            GameUnit unitAt = GetUnitAt(candidate);
+            if (unitAt != null && unitAt != mover)
+                continue;
+
+            int distance = GetManhattanDistance(candidate, edge);
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public GameUnit GetNearestEnemy(GameUnit mover)
     {
         if (mover == null)
@@ -351,9 +412,7 @@ public class GridManager : MonoBehaviour
             if (other.IsBroken) continue;
             if (other.TeamId != unit.TeamId) continue;
 
-            int distance =
-                Mathf.Abs(other.GridPosition.x - unit.GridPosition.x) +
-                Mathf.Abs(other.GridPosition.y - unit.GridPosition.y);
+            int distance = GetManhattanDistance(unit.GridPosition, other.GridPosition);
 
             if (distance < bestDistance)
                 bestDistance = distance;
@@ -452,7 +511,7 @@ public class GridManager : MonoBehaviour
         if (heightDelta >= steepHeightThreshold)
             cost += steepHeightExtraCost;
 
-        return Mathf.Max(0, cost);
+        return Mathf.Max(1, cost);
     }
 
     public int GetTravelCostAlongLine(GameUnit mover, Vector2Int start, Vector2Int end)
@@ -514,25 +573,10 @@ public class GridManager : MonoBehaviour
 
             GameUnit unitAt = GetUnitAt(p);
 
-            if (unitAt == null)
+            if (unitAt == null || unitAt == mover)
             {
                 runningCost += stepCost;
                 lastValid = p;
-                previous = p;
-                continue;
-            }
-
-            if (unitAt == mover)
-            {
-                runningCost += stepCost;
-                lastValid = p;
-                previous = p;
-                continue;
-            }
-
-            if (unitAt.TeamId == mover.TeamId)
-            {
-                runningCost += stepCost;
                 previous = p;
                 continue;
             }
@@ -580,6 +624,11 @@ public class GridManager : MonoBehaviour
         }
 
         return found;
+    }
+
+    private int GetManhattanDistance(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 
     private List<Vector2Int> GetLine(Vector2Int start, Vector2Int end)
