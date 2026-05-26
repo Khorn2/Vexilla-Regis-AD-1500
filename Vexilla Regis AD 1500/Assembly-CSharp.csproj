@@ -91,6 +91,7 @@
     <Compile Include="Assets\Assets\Scripts\OptionsMenuUI.cs" />
     <Compile Include="Assets\Assets\Scripts\TestScenarioSpawner.cs" />
     <Compile Include="Assets\Assets\Scripts\Tile.cs" />
+    <Compile Include="Assets\Assets\Scripts\RuntimeTerrainEditor.cs" />
     <Compile Include="Assets\Assets\Scripts\CommandPreviewRenderer.cs" />
     <Compile Include="Assets\Assets\Scripts\UnitStats.cs" />
     <Compile Include="Assets\Assets\Scripts\GridPathfinder.cs" />
