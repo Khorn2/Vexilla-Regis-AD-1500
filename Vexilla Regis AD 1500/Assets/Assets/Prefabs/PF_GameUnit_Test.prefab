@@ -145,6 +145,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   selectionRing: {fileID: 4168126026889241586}
+  brokenOverlay: {fileID: 0}
+  stats: {fileID: 0}
+  currentOrder: 0
+  chargeMovementRangeMultiplier: 1.5
+  chargeMoveSpeedMultiplier: 1.5
+  retreatMovementRangeMultiplier: 1.5
+  retreatMoveSpeedMultiplier: 1.75
+  teamId: 0
+  allowShotThroughOneAlly: 0
+  targetDamageMultiplierThroughAlly: 0.85
+  allyDamageMultiplier: 0.25
+  forestRangedDamageMultiplier: 0.65
+  logFlankingResults: 0
 --- !u!1 &4168126026889241586
 GameObject:
   m_ObjectHideFlags: 0
