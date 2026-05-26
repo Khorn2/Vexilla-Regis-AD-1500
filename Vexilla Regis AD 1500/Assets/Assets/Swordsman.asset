@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
+  m_Name: Swordsman
+  m_EditorClassIdentifier: 
+  unitName: Spearman
+  movementRange: 3
+  moveSpeedTilesPerSec: 1.5
+  stopMovementOnEnemyContact: 1
+  unitSize: 300
+  meleeDamage: 5
+  rangedDamage: 4
+  shootRange: 4
+  flankMeleeDamageMultiplier: 1.15
+  rearMeleeDamageMultiplier: 1.3
+  flankMoralePenalty: 4
+  rearMoralePenalty: 8
+  chargeImpactPerTile: 0
+  maxChargeBonus: 0
+  minTilesForChargeBonus: 1
+  canAutoMelee: 1
+  autoMeleeDamageMultiplier: 1
+  maxMorale: 300
+  lowMoraleThreshold: 200
+  brokenMoraleThreshold: 150
+  lowMoraleDamageMultiplier: 0.6
+  moraleDamagePerLostUnit: 2
+  passiveMoraleRecovery: 4
+  idleMoraleRecoveryBonus: 6
+  maxManualRetreatTurns: 2
+  brokenMoraleRecoveryPerTurn: 8
+  brokenRallyChance: 0.25
+  rallyMoraleGain: 35
+  rallyMinimumMorale: 70
+  moraleSupportRadius: 3
+  adjacentAllyMoraleLossMultiplier: 0.75
+  nearbyAllyMoraleLossMultiplier: 0.9
+  normalMoraleLossMultiplier: 1
+  isolatedMoraleLossMultiplier: 1.35
+  armorPercent: 0.2
+  maxAmmo: 100
+  ammoPerShot: 10
+  canCharge: 1
+  canShoot: 0
+  isInfantry: 1
+  isCavalry: 0
+  isCannon: 0
+  allowFriendlyFireThroughAlly: 0

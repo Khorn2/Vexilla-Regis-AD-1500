@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: TestShooter
+  m_Name: Arquebussier
   m_EditorClassIdentifier: 
-  unitName: Test Shooter
+  unitName: Arquebussier
   movementRange: 4
-  moveSpeedTilesPerSec: 4
+  moveSpeedTilesPerSec: 2
   stopMovementOnEnemyContact: 1
-  unitSize: 100
-  meleeDamage: 4
-  rangedDamage: 10
+  unitSize: 200
+  meleeDamage: 1
+  rangedDamage: 2
   shootRange: 5
-  flankMeleeDamageMultiplier: 1.15
-  rearMeleeDamageMultiplier: 1.3
+  flankMeleeDamageMultiplier: 1
+  rearMeleeDamageMultiplier: 1
   flankMoralePenalty: 4
   rearMoralePenalty: 8
   chargeImpactPerTile: 2
@@ -29,9 +29,9 @@ MonoBehaviour:
   minTilesForChargeBonus: 2
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 100
-  lowMoraleThreshold: 50
-  brokenMoraleThreshold: 15
+  maxMorale: 150
+  lowMoraleThreshold: 75
+  brokenMoraleThreshold: 50
   lowMoraleDamageMultiplier: 0.8
   moraleDamagePerLostUnit: 2
   passiveMoraleRecovery: 4
@@ -47,7 +47,7 @@ MonoBehaviour:
   normalMoraleLossMultiplier: 1
   isolatedMoraleLossMultiplier: 1.35
   armorPercent: 0.2
-  maxAmmo: 100
+  maxAmmo: 120
   ammoPerShot: 10
   canCharge: 1
   canShoot: 1

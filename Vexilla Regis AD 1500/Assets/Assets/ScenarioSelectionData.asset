@@ -23,5 +23,5 @@ MonoBehaviour:
     Gonzalo przygotowa\u0142 swoich ludzi do statecznej konfrontacji, kt\xF3ra mia\u0142a
     wydarzy\u0107 si\u0119 29 grudnia 1503 roku w walce, kt\xF3ra zostanie zapami\u0119tana
     jako bitwa nad rzek\u0105 Garigliano."
-  scenarioImage: {fileID: 0}
+  scenarioImage: {fileID: 21300000, guid: 572718978d0b00b4298c0ac5a7637dc4, type: 3}
   gameplaySceneName: SampleScene

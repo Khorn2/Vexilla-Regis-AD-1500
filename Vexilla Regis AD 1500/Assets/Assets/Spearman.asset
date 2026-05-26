@@ -10,28 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: TestInfantry
+  m_Name: Spearman
   m_EditorClassIdentifier: 
-  unitName: Test Infantry
-  movementRange: 4
-  moveSpeedTilesPerSec: 4
+  unitName: Spearman
+  movementRange: 3
+  moveSpeedTilesPerSec: 1.5
   stopMovementOnEnemyContact: 1
-  unitSize: 100
-  meleeDamage: 10
-  rangedDamage: 8
+  unitSize: 300
+  meleeDamage: 2
+  rangedDamage: 4
   shootRange: 4
-  flankMeleeDamageMultiplier: 1.15
-  rearMeleeDamageMultiplier: 1.3
-  flankMoralePenalty: 4
-  rearMoralePenalty: 8
-  chargeImpactPerTile: 2
-  maxChargeBonus: 20
-  minTilesForChargeBonus: 2
+  flankMeleeDamageMultiplier: 1.5
+  rearMeleeDamageMultiplier: 1.75
+  flankMoralePenalty: 2
+  rearMoralePenalty: 4
+  chargeImpactPerTile: 0
+  maxChargeBonus: 0
+  minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 100
-  lowMoraleThreshold: 50
-  brokenMoraleThreshold: 15
+  maxMorale: 300
+  lowMoraleThreshold: 150
+  brokenMoraleThreshold: 100
   lowMoraleDamageMultiplier: 0.8
   moraleDamagePerLostUnit: 2
   passiveMoraleRecovery: 4
@@ -39,14 +39,14 @@ MonoBehaviour:
   maxManualRetreatTurns: 2
   brokenMoraleRecoveryPerTurn: 8
   brokenRallyChance: 0.25
-  rallyMoraleGain: 20
-  rallyMinimumMorale: 25
+  rallyMoraleGain: 35
+  rallyMinimumMorale: 70
   moraleSupportRadius: 3
   adjacentAllyMoraleLossMultiplier: 0.75
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
   isolatedMoraleLossMultiplier: 1.35
-  armorPercent: 0.2
+  armorPercent: 0.35
   maxAmmo: 100
   ammoPerShot: 10
   canCharge: 1
