@@ -15,15 +15,31 @@ public class TestScenarioSpawner : MonoBehaviour
         [Range(1, 6)]
         public int heightLevel = 1;
 
-        public Sprite spriteOverride;
+        public string spriteId;
     }
 
-    [SerializeField] private GridManager grid;
-    [SerializeField] private TurnManager turnManager;
-    [SerializeField] private BattleStatsTracker battleStatsTracker;
+    [System.Serializable]
+    public class PlacedUnitData
+    {
+        public string prefabId;
+
+        public Vector2Int gridPosition;
+
+        public int teamId;
+    }
+
+    [SerializeField]
+    private GridManager grid;
+
+    [SerializeField]
+    private TurnManager turnManager;
+
+    [SerializeField]
+    private BattleStatsTracker battleStatsTracker;
 
     [Header("Scenario Rules")]
-    [SerializeField] private bool useTurnLimit = false;
+    [SerializeField]
+    private bool useTurnLimit = false;
 
     [SerializeField, Min(1)]
     private int maxTurns = 40;
@@ -31,14 +47,19 @@ public class TestScenarioSpawner : MonoBehaviour
     [SerializeField]
     private bool drawOnTurnLimit = true;
 
-    [Header("Units")]
+    [Header("Scenario Units")]
     [SerializeField]
     private ScenarioSpawnData[] spawns;
 
     [Header("Terrain")]
-    [SerializeField]
-    public List<TerrainPaintData> terrainPaints =
-        new List<TerrainPaintData>();
+    public List<TerrainPaintData>
+        terrainPaints =
+            new List<TerrainPaintData>();
+
+    [Header("Runtime Units")]
+    public List<PlacedUnitData>
+        placedUnits =
+            new List<PlacedUnitData>();
 
     private void Awake()
     {
@@ -67,6 +88,8 @@ public class TestScenarioSpawner : MonoBehaviour
         ApplyTerrain();
 
         SpawnScenario();
+
+        SpawnRuntimeUnits();
     }
 
     private void ApplyScenarioRules()
@@ -74,7 +97,7 @@ public class TestScenarioSpawner : MonoBehaviour
         if (turnManager == null)
         {
             Debug.LogWarning(
-                "TestScenarioSpawner: brak TurnManager."
+                "Missing TurnManager."
             );
 
             return;
@@ -87,32 +110,25 @@ public class TestScenarioSpawner : MonoBehaviour
         );
 
         Debug.Log(
-            $"Scenario rules: " +
-            $"useTurnLimit={useTurnLimit}, " +
-            $"maxTurns={maxTurns}"
+            $"Scenario Rules: " +
+            $"TurnLimit={useTurnLimit}, " +
+            $"MaxTurns={maxTurns}"
         );
     }
 
-    private void ApplyTerrain()
+    public void ApplyTerrain()
     {
         if (grid == null)
         {
             Debug.LogError(
-                "TestScenarioSpawner: brak GridManager."
+                "Missing GridManager."
             );
 
             return;
         }
 
-        if (terrainPaints == null ||
-            terrainPaints.Count == 0)
-        {
-            Debug.Log(
-                "TestScenarioSpawner: brak terenu."
-            );
-
+        if (terrainPaints == null)
             return;
-        }
 
         for (int i = 0;
              i < terrainPaints.Count;
@@ -123,38 +139,37 @@ public class TestScenarioSpawner : MonoBehaviour
 
             if (!grid.IsInside(
                 data.gridPosition))
-            {
-                Debug.LogWarning(
-                    $"Terrain {i}: poza mapą."
-                );
-
                 continue;
+
+            Sprite sprite = null;
+
+            if (TerrainSpriteDatabase
+                .Instance != null)
+            {
+                sprite =
+                    TerrainSpriteDatabase
+                        .Instance
+                        .Get(data.spriteId);
             }
 
             grid.SetTileTerrain(
                 data.gridPosition,
                 data.terrainType,
                 data.heightLevel,
-                data.spriteOverride
+                sprite
             );
         }
 
         Debug.Log(
-            "Applied terrain entries = " +
+            "Applied terrain entries: " +
             terrainPaints.Count
         );
     }
 
     private void SpawnScenario()
     {
-        if (grid == null)
-        {
-            Debug.LogError(
-                "TestScenarioSpawner: brak GridManager."
-            );
-
+        if (spawns == null)
             return;
-        }
 
         for (int i = 0;
              i < spawns.Length;
@@ -166,56 +181,91 @@ public class TestScenarioSpawner : MonoBehaviour
             if (data.prefab == null)
                 continue;
 
-            if (!grid.IsInside(
-                data.gridPosition))
-                continue;
-
-            if (!grid.IsWalkable(
-                data.gridPosition))
-                continue;
-
-            if (grid.IsOccupied(
-                data.gridPosition))
-                continue;
-
-            GameObject go =
-                Instantiate(
-                    data.prefab,
-                    new Vector3(
-                        data.gridPosition.x,
-                        data.gridPosition.y,
-                        0f
-                    ),
-                    Quaternion.identity
-                );
-
-            if (go == null)
-                continue;
-
-            GameUnit unit =
-                go.GetComponent<GameUnit>();
-
-            if (unit == null)
-            {
-                Destroy(go);
-                continue;
-            }
-
-            unit.SetTeam(data.teamId);
-
-            unit.SnapToGrid(
-                data.gridPosition
+            SpawnUnit(
+                data.prefab,
+                data.gridPosition,
+                data.teamId
             );
-
-            if (battleStatsTracker != null)
-            {
-                battleStatsTracker
-                    .RegisterScenarioUnit(unit);
-            }
         }
 
         Debug.Log(
-            "Test scenario spawned."
+            "Scenario units spawned."
         );
+    }
+
+    public void SpawnRuntimeUnits()
+    {
+        if (placedUnits == null)
+            return;
+
+        foreach (PlacedUnitData data
+            in placedUnits)
+        {
+            GameObject prefab =
+                UnitPrefabDatabase
+                    .Instance
+                    .Get(data.prefabId);
+
+            if (prefab == null)
+                continue;
+
+            SpawnUnit(
+                prefab,
+                data.gridPosition,
+                data.teamId
+            );
+        }
+
+        Debug.Log(
+            "Runtime units spawned."
+        );
+    }
+
+    private void SpawnUnit(
+        GameObject prefab,
+        Vector2Int gridPosition,
+        int teamId)
+    {
+        if (prefab == null)
+            return;
+
+        if (!grid.IsInside(gridPosition))
+            return;
+
+        if (!grid.IsWalkable(gridPosition))
+            return;
+
+        if (grid.IsOccupied(gridPosition))
+            return;
+
+        GameObject spawned =
+            Instantiate(
+                prefab,
+                new Vector3(
+                    gridPosition.x,
+                    gridPosition.y,
+                    -0.2f
+                ),
+                Quaternion.identity
+            );
+
+        GameUnit unit =
+            spawned.GetComponent<GameUnit>();
+
+        if (unit == null)
+        {
+            Destroy(spawned);
+            return;
+        }
+
+        unit.SetTeam(teamId);
+
+        unit.SnapToGrid(gridPosition);
+
+        if (battleStatsTracker != null)
+        {
+            battleStatsTracker
+                .RegisterScenarioUnit(unit);
+        }
     }
 }

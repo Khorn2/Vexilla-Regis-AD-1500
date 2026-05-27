@@ -10,30 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: Swordsman
+  m_Name: Cuirassiers
   m_EditorClassIdentifier: 
-  unitName: Swordsman
-  movementRange: 3
-  moveSpeedTilesPerSec: 1
+  unitName: Cuirassiers
+  movementRange: 6
+  moveSpeedTilesPerSec: 2.5
   stopMovementOnEnemyContact: 1
-  unitSize: 300
-  meleeDamage: 7
+  unitSize: 175
+  meleeDamage: 3
   rangedDamage: 4
   shootRange: 4
   flankMeleeDamageMultiplier: 1.75
   rearMeleeDamageMultiplier: 2
-  flankMoralePenalty: 4
-  rearMoralePenalty: 8
-  chargeImpactPerTile: 0
-  maxChargeBonus: 0
+  flankMoralePenalty: 3
+  rearMoralePenalty: 6
+  chargeImpactPerTile: 2
+  maxChargeBonus: 10
   minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 350
-  lowMoraleThreshold: 275
+  maxMorale: 300
+  lowMoraleThreshold: 150
   brokenMoraleThreshold: 85
   lowMoraleDamageMultiplier: 0.6
-  moraleDamagePerLostUnit: 2
+  moraleDamagePerLostUnit: 3
   passiveMoraleRecovery: 4
   idleMoraleRecoveryBonus: 6
   maxManualRetreatTurns: 2
@@ -45,13 +45,13 @@ MonoBehaviour:
   adjacentAllyMoraleLossMultiplier: 0.75
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
-  isolatedMoraleLossMultiplier: 1.35
-  armorPercent: 0.2
+  isolatedMoraleLossMultiplier: 0.6
+  armorPercent: 0.6
   maxAmmo: 100
   ammoPerShot: 10
   canCharge: 1
   canShoot: 0
-  isInfantry: 1
-  isCavalry: 0
+  isInfantry: 0
+  isCavalry: 1
   isCannon: 0
   allowFriendlyFireThroughAlly: 0

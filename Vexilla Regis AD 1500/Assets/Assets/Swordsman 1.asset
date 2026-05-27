@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: Swordsman
+  m_Name: Swordsman 1
   m_EditorClassIdentifier: 
-  unitName: Swordsman
+  unitName: Elite Swordsman
   movementRange: 3
   moveSpeedTilesPerSec: 1
   stopMovementOnEnemyContact: 1
   unitSize: 300
-  meleeDamage: 7
+  meleeDamage: 8
   rangedDamage: 4
   shootRange: 4
   flankMeleeDamageMultiplier: 1.75
@@ -29,7 +29,7 @@ MonoBehaviour:
   minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 350
+  maxMorale: 400
   lowMoraleThreshold: 275
   brokenMoraleThreshold: 85
   lowMoraleDamageMultiplier: 0.6
@@ -46,7 +46,7 @@ MonoBehaviour:
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
   isolatedMoraleLossMultiplier: 1.35
-  armorPercent: 0.2
+  armorPercent: 0.4
   maxAmmo: 100
   ammoPerShot: 10
   canCharge: 1

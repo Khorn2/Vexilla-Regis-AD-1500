@@ -14,22 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitName: Arquebussier
   movementRange: 4
-  moveSpeedTilesPerSec: 2
+  moveSpeedTilesPerSec: 1.5
   stopMovementOnEnemyContact: 1
-  unitSize: 200
+  unitSize: 125
   meleeDamage: 1
-  rangedDamage: 2
+  rangedDamage: 8
   shootRange: 5
   flankMeleeDamageMultiplier: 1
   rearMeleeDamageMultiplier: 1
-  flankMoralePenalty: 4
-  rearMoralePenalty: 8
+  flankMoralePenalty: 8
+  rearMoralePenalty: 16
   chargeImpactPerTile: 2
   maxChargeBonus: 20
   minTilesForChargeBonus: 2
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 150
+  maxMorale: 300
   lowMoraleThreshold: 75
   brokenMoraleThreshold: 50
   lowMoraleDamageMultiplier: 0.8

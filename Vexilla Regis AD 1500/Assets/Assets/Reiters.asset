@@ -10,33 +10,33 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: Swordsman
+  m_Name: Reiters
   m_EditorClassIdentifier: 
-  unitName: Swordsman
-  movementRange: 3
-  moveSpeedTilesPerSec: 1
+  unitName: Reiters
+  movementRange: 8
+  moveSpeedTilesPerSec: 3
   stopMovementOnEnemyContact: 1
-  unitSize: 300
-  meleeDamage: 7
+  unitSize: 175
+  meleeDamage: 2
   rangedDamage: 4
-  shootRange: 4
-  flankMeleeDamageMultiplier: 1.75
-  rearMeleeDamageMultiplier: 2
-  flankMoralePenalty: 4
-  rearMoralePenalty: 8
-  chargeImpactPerTile: 0
-  maxChargeBonus: 0
+  shootRange: 3
+  flankMeleeDamageMultiplier: 1.25
+  rearMeleeDamageMultiplier: 1.75
+  flankMoralePenalty: 3
+  rearMoralePenalty: 6
+  chargeImpactPerTile: 1
+  maxChargeBonus: 8
   minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 350
-  lowMoraleThreshold: 275
+  maxMorale: 250
+  lowMoraleThreshold: 175
   brokenMoraleThreshold: 85
   lowMoraleDamageMultiplier: 0.6
-  moraleDamagePerLostUnit: 2
+  moraleDamagePerLostUnit: 5
   passiveMoraleRecovery: 4
   idleMoraleRecoveryBonus: 6
-  maxManualRetreatTurns: 2
+  maxManualRetreatTurns: 20
   brokenMoraleRecoveryPerTurn: 8
   brokenRallyChance: 0.25
   rallyMoraleGain: 35
@@ -45,13 +45,13 @@ MonoBehaviour:
   adjacentAllyMoraleLossMultiplier: 0.75
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
-  isolatedMoraleLossMultiplier: 1.35
+  isolatedMoraleLossMultiplier: 0.4
   armorPercent: 0.2
-  maxAmmo: 100
+  maxAmmo: 80
   ammoPerShot: 10
   canCharge: 1
-  canShoot: 0
-  isInfantry: 1
-  isCavalry: 0
+  canShoot: 1
+  isInfantry: 0
+  isCavalry: 1
   isCannon: 0
   allowFriendlyFireThroughAlly: 0

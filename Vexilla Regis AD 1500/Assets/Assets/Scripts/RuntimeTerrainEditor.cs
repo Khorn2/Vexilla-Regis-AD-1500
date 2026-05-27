@@ -7,15 +7,27 @@ public class RuntimeTerrainEditor : MonoBehaviour
     [System.Serializable]
     public class TerrainBrush
     {
+        [Header("Brush")]
         public string brushName;
 
+        [Header("Terrain")]
         public TerrainType terrainType =
             TerrainType.Plain;
 
         [Range(1, 6)]
         public int heightLevel = 1;
 
-        public Sprite spriteOverride;
+        [Header("Terrain Sprite")]
+        public string spriteId;
+
+        [Header("Placeable Object")]
+        public GameObject placeableObject;
+
+        [Header("Saved Unit")]
+        public string unitPrefabId;
+
+        [Header("Team")]
+        public int placedTeamId = 0;
     }
 
     [System.Serializable]
@@ -24,10 +36,15 @@ public class RuntimeTerrainEditor : MonoBehaviour
         public List<TestScenarioSpawner.TerrainPaintData>
             terrain =
                 new List<TestScenarioSpawner.TerrainPaintData>();
+
+        public List<TestScenarioSpawner.PlacedUnitData>
+            units =
+                new List<TestScenarioSpawner.PlacedUnitData>();
     }
 
     [Header("References")]
-    [SerializeField] private GridManager grid;
+    [SerializeField]
+    private GridManager grid;
 
     [SerializeField]
     private TestScenarioSpawner scenarioSpawner;
@@ -38,6 +55,9 @@ public class RuntimeTerrainEditor : MonoBehaviour
     [Header("Editor")]
     [SerializeField]
     private bool editMode = true;
+
+    [SerializeField]
+    private bool allowObjectPlacement = true;
 
     [Header("Brushes")]
     [SerializeField]
@@ -75,7 +95,24 @@ public class RuntimeTerrainEditor : MonoBehaviour
 
         HandleBrushSelection();
 
-        HandlePainting();
+        if (Input.GetMouseButton(0))
+        {
+            PaintTile();
+        }
+
+        // PPM = usuwa tylko jednostki
+        if (Input.GetMouseButton(1) &&
+            !Input.GetKey(KeyCode.LeftShift))
+        {
+            RemoveObjectsOnly();
+        }
+
+        // SHIFT + PPM = usuwa terrain
+        if (Input.GetMouseButton(1) &&
+            Input.GetKey(KeyCode.LeftShift))
+        {
+            RemoveTerrain();
+        }
     }
 
     private void HandleBrushSelection()
@@ -99,17 +136,14 @@ public class RuntimeTerrainEditor : MonoBehaviour
         }
     }
 
-    private void HandlePainting()
+    private Vector2Int GetMouseGridPosition()
     {
-        if (Input.GetMouseButton(0))
-        {
-            PaintTile();
-        }
+        Vector3 mouseWorld =
+            cam.ScreenToWorldPoint(
+                Input.mousePosition
+            );
 
-        if (Input.GetMouseButton(1))
-        {
-            EraseTile();
-        }
+        return grid.WorldToGrid(mouseWorld);
     }
 
     private void PaintTile()
@@ -125,25 +159,31 @@ public class RuntimeTerrainEditor : MonoBehaviour
         TerrainBrush brush =
             brushes[currentBrushIndex];
 
-        Vector3 mouseWorld =
-            cam.ScreenToWorldPoint(
-                Input.mousePosition
-            );
-
         Vector2Int gridPos =
-            grid.WorldToGrid(mouseWorld);
+            GetMouseGridPosition();
 
         if (!grid.IsInside(gridPos))
             return;
 
+        Sprite sprite = null;
+
+        if (TerrainSpriteDatabase.Instance != null)
+        {
+            sprite =
+                TerrainSpriteDatabase.Instance.Get(
+                    brush.spriteId
+                );
+        }
+
+        // TERRAIN
         grid.SetTileTerrain(
             gridPos,
             brush.terrainType,
             brush.heightLevel,
-            brush.spriteOverride
+            sprite
         );
 
-        bool found = false;
+        bool terrainFound = false;
 
         for (int i = 0;
              i < scenarioSpawner
@@ -163,20 +203,20 @@ public class RuntimeTerrainEditor : MonoBehaviour
                 data.heightLevel =
                     brush.heightLevel;
 
-                data.spriteOverride =
-                    brush.spriteOverride;
+                data.spriteId =
+                    brush.spriteId;
 
                 scenarioSpawner
                     .terrainPaints[i] =
                         data;
 
-                found = true;
+                terrainFound = true;
 
                 break;
             }
         }
 
-        if (!found)
+        if (!terrainFound)
         {
             TestScenarioSpawner
                 .TerrainPaintData data =
@@ -192,40 +232,189 @@ public class RuntimeTerrainEditor : MonoBehaviour
             data.heightLevel =
                 brush.heightLevel;
 
-            data.spriteOverride =
-                brush.spriteOverride;
+            data.spriteId =
+                brush.spriteId;
 
             scenarioSpawner
                 .terrainPaints
                 .Add(data);
         }
 
-        SaveTerrain();
+        // PLACE UNIT / OBJECT
+        if (allowObjectPlacement &&
+            brush.placeableObject != null)
+        {
+            bool unitExists = false;
 
-        Debug.Log(
-            $"Painted {gridPos.x} " +
-            $"{gridPos.y}"
-        );
+            Collider2D[] hits =
+                Physics2D.OverlapCircleAll(
+                    new Vector2(
+                        gridPos.x,
+                        gridPos.y
+                    ),
+                    0.2f
+                );
+
+            foreach (Collider2D hit in hits)
+            {
+                if (hit == null)
+                    continue;
+
+                if (hit.GetComponent<GameUnit>() != null)
+                {
+                    unitExists = true;
+                    break;
+                }
+            }
+
+            if (!unitExists)
+            {
+                Vector3 spawnPos =
+                    new Vector3(
+                        gridPos.x,
+                        gridPos.y,
+                        -0.2f
+                    );
+
+                GameObject spawned =
+                    Instantiate(
+                        brush.placeableObject,
+                        spawnPos,
+                        Quaternion.identity
+                    );
+
+                GameUnit unit =
+                    spawned.GetComponent<GameUnit>();
+
+                if (unit != null)
+                {
+                    unit.SetTeam(
+                        brush.placedTeamId
+                    );
+
+                    unit.SnapToGrid(
+                        gridPos
+                    );
+                }
+
+                if (!string.IsNullOrEmpty(
+                    brush.unitPrefabId))
+                {
+                    bool alreadyExists = false;
+
+                    foreach (var unitData in
+                        scenarioSpawner
+                        .placedUnits)
+                    {
+                        if (unitData.gridPosition ==
+                            gridPos)
+                        {
+                            alreadyExists = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyExists)
+                    {
+                        TestScenarioSpawner
+                            .PlacedUnitData
+                            unitData =
+                                new TestScenarioSpawner
+                                    .PlacedUnitData();
+
+                        unitData.prefabId =
+                            brush.unitPrefabId;
+
+                        unitData.gridPosition =
+                            gridPos;
+
+                        unitData.teamId =
+                            brush.placedTeamId;
+
+                        scenarioSpawner
+                            .placedUnits
+                            .Add(unitData);
+                    }
+                }
+            }
+        }
+
+        SaveTerrain();
     }
 
-    private void EraseTile()
+    // PPM
+    private void RemoveObjectsOnly()
     {
-        Vector3 mouseWorld =
-            cam.ScreenToWorldPoint(
-                Input.mousePosition
+        Vector2Int gridPos =
+            GetMouseGridPosition();
+
+        Collider2D[] hits =
+            Physics2D.OverlapCircleAll(
+                new Vector2(
+                    gridPos.x,
+                    gridPos.y
+                ),
+                0.3f
             );
 
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null)
+                continue;
+
+            GameUnit unit =
+                hit.GetComponent<GameUnit>();
+
+            if (unit != null)
+            {
+                Destroy(unit.gameObject);
+
+                for (int i =
+                         scenarioSpawner
+                         .placedUnits.Count - 1;
+                     i >= 0;
+                     i--)
+                {
+                    if (scenarioSpawner
+                        .placedUnits[i]
+                        .gridPosition ==
+                        gridPos)
+                    {
+                        scenarioSpawner
+                            .placedUnits
+                            .RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        SaveTerrain();
+    }
+
+    // SHIFT + PPM
+    private void RemoveTerrain()
+    {
         Vector2Int gridPos =
-            grid.WorldToGrid(mouseWorld);
+            GetMouseGridPosition();
 
         if (!grid.IsInside(gridPos))
             return;
+
+        Sprite defaultSprite = null;
+
+        if (TerrainSpriteDatabase.Instance != null)
+        {
+            defaultSprite =
+                TerrainSpriteDatabase.Instance.Get(
+                    "grass"
+                );
+        }
 
         grid.SetTileTerrain(
             gridPos,
             TerrainType.Plain,
             1,
-            null
+            defaultSprite
         );
 
         for (int i =
@@ -236,7 +425,8 @@ public class RuntimeTerrainEditor : MonoBehaviour
         {
             if (scenarioSpawner
                 .terrainPaints[i]
-                .gridPosition == gridPos)
+                .gridPosition ==
+                gridPos)
             {
                 scenarioSpawner
                     .terrainPaints
@@ -245,11 +435,6 @@ public class RuntimeTerrainEditor : MonoBehaviour
         }
 
         SaveTerrain();
-
-        Debug.Log(
-            $"Erased {gridPos.x} " +
-            $"{gridPos.y}"
-        );
     }
 
     private void SaveTerrain()
@@ -259,6 +444,9 @@ public class RuntimeTerrainEditor : MonoBehaviour
 
         save.terrain =
             scenarioSpawner.terrainPaints;
+
+        save.units =
+            scenarioSpawner.placedUnits;
 
         string json =
             JsonUtility.ToJson(
@@ -270,22 +458,12 @@ public class RuntimeTerrainEditor : MonoBehaviour
             SavePath,
             json
         );
-
-        Debug.Log(
-            "Terrain Saved"
-        );
     }
 
     private void LoadTerrain()
     {
         if (!File.Exists(SavePath))
-        {
-            Debug.Log(
-                "No terrain save found."
-            );
-
             return;
-        }
 
         string json =
             File.ReadAllText(
@@ -296,13 +474,25 @@ public class RuntimeTerrainEditor : MonoBehaviour
             JsonUtility.FromJson
             <TerrainSaveData>(json);
 
-        scenarioSpawner
-            .terrainPaints =
-                save.terrain;
+        if (save != null)
+        {
+            if (save.terrain != null)
+            {
+                scenarioSpawner
+                    .terrainPaints =
+                        save.terrain;
+            }
 
-        Debug.Log(
-            "Terrain Loaded"
-        );
+            if (save.units != null)
+            {
+                scenarioSpawner
+                    .placedUnits =
+                        save.units;
+            }
+        }
+
+        scenarioSpawner.ApplyTerrain();
+        scenarioSpawner.SpawnRuntimeUnits();
     }
 
     private void OnDrawGizmos()

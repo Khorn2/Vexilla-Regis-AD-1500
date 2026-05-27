@@ -10,48 +10,48 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: Swordsman
+  m_Name: Culverin
   m_EditorClassIdentifier: 
-  unitName: Swordsman
-  movementRange: 3
-  moveSpeedTilesPerSec: 1
+  unitName: Culverin
+  movementRange: 2
+  moveSpeedTilesPerSec: 0.3
   stopMovementOnEnemyContact: 1
-  unitSize: 300
-  meleeDamage: 7
-  rangedDamage: 4
-  shootRange: 4
-  flankMeleeDamageMultiplier: 1.75
-  rearMeleeDamageMultiplier: 2
-  flankMoralePenalty: 4
-  rearMoralePenalty: 8
-  chargeImpactPerTile: 0
-  maxChargeBonus: 0
-  minTilesForChargeBonus: 1
+  unitSize: 50
+  meleeDamage: 0
+  rangedDamage: 16
+  shootRange: 10
+  flankMeleeDamageMultiplier: 1
+  rearMeleeDamageMultiplier: 1
+  flankMoralePenalty: 8
+  rearMoralePenalty: 16
+  chargeImpactPerTile: 2
+  maxChargeBonus: 20
+  minTilesForChargeBonus: 2
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 350
-  lowMoraleThreshold: 275
-  brokenMoraleThreshold: 85
-  lowMoraleDamageMultiplier: 0.6
+  maxMorale: 150
+  lowMoraleThreshold: 75
+  brokenMoraleThreshold: 50
+  lowMoraleDamageMultiplier: 0.8
   moraleDamagePerLostUnit: 2
   passiveMoraleRecovery: 4
   idleMoraleRecoveryBonus: 6
-  maxManualRetreatTurns: 2
+  maxManualRetreatTurns: 1
   brokenMoraleRecoveryPerTurn: 8
   brokenRallyChance: 0.25
-  rallyMoraleGain: 35
-  rallyMinimumMorale: 70
+  rallyMoraleGain: 20
+  rallyMinimumMorale: 25
   moraleSupportRadius: 3
   adjacentAllyMoraleLossMultiplier: 0.75
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
   isolatedMoraleLossMultiplier: 1.35
-  armorPercent: 0.2
-  maxAmmo: 100
+  armorPercent: 0
+  maxAmmo: 60
   ammoPerShot: 10
   canCharge: 1
-  canShoot: 0
-  isInfantry: 1
+  canShoot: 1
+  isInfantry: 0
   isCavalry: 0
-  isCannon: 0
-  allowFriendlyFireThroughAlly: 0
+  isCannon: 1
+  allowFriendlyFireThroughAlly: 1

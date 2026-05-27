@@ -14,24 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitName: Spearman
   movementRange: 3
-  moveSpeedTilesPerSec: 1.5
+  moveSpeedTilesPerSec: 0.75
   stopMovementOnEnemyContact: 1
   unitSize: 300
-  meleeDamage: 2
+  meleeDamage: 6
   rangedDamage: 4
   shootRange: 4
   flankMeleeDamageMultiplier: 1.5
   rearMeleeDamageMultiplier: 2
-  flankMoralePenalty: 2
-  rearMoralePenalty: 4
+  flankMoralePenalty: 4
+  rearMoralePenalty: 8
   chargeImpactPerTile: 0
   maxChargeBonus: 0
   minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 300
-  lowMoraleThreshold: 150
-  brokenMoraleThreshold: 100
+  maxMorale: 350
+  lowMoraleThreshold: 200
+  brokenMoraleThreshold: 85
   lowMoraleDamageMultiplier: 0.8
   moraleDamagePerLostUnit: 2
   passiveMoraleRecovery: 4
@@ -46,7 +46,7 @@ MonoBehaviour:
   nearbyAllyMoraleLossMultiplier: 0.9
   normalMoraleLossMultiplier: 1
   isolatedMoraleLossMultiplier: 1.35
-  armorPercent: 0.35
+  armorPercent: 0.4
   maxAmmo: 100
   ammoPerShot: 10
   canCharge: 1
