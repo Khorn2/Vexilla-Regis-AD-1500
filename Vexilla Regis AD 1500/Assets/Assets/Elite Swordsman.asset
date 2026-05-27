@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1d561b1dd746b04a8cc8f74b17bf229, type: 3}
-  m_Name: Swordsman 1
+  m_Name: Elite Swordsman
   m_EditorClassIdentifier: 
   unitName: Elite Swordsman
   movementRange: 3
