@@ -20,8 +20,8 @@ MonoBehaviour:
   meleeDamage: 3
   rangedDamage: 4
   shootRange: 4
-  flankMeleeDamageMultiplier: 1.75
-  rearMeleeDamageMultiplier: 2
+  flankMeleeDamageMultiplier: 2
+  rearMeleeDamageMultiplier: 4.5
   flankMoralePenalty: 3
   rearMoralePenalty: 6
   chargeImpactPerTile: 2
