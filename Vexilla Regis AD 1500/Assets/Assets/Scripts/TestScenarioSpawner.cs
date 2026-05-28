@@ -87,7 +87,43 @@ public class TestScenarioSpawner : MonoBehaviour
 
         ApplyTerrain();
 
+        // ALWAYS SPAWN DEFAULT SCENARIO
         SpawnScenario();
+
+        // LOAD RUNTIME SAVE
+        string savePath =
+            Application.persistentDataPath +
+            "/terrain.json";
+
+        if (System.IO.File.Exists(savePath))
+        {
+            string json =
+                System.IO.File.ReadAllText(
+                    savePath
+                );
+
+            RuntimeTerrainEditor
+                .TerrainSaveData save =
+                    JsonUtility.FromJson
+                    <RuntimeTerrainEditor
+                        .TerrainSaveData>(
+                            json
+                        );
+
+            if (save != null)
+            {
+                terrainPaints =
+                    save.terrain;
+
+                placedUnits =
+                    save.units;
+
+                Debug.Log(
+                    "Runtime save loaded. Units: " +
+                    placedUnits.Count
+                );
+            }
+        }
 
         SpawnRuntimeUnits();
     }
@@ -201,13 +237,27 @@ public class TestScenarioSpawner : MonoBehaviour
         foreach (PlacedUnitData data
             in placedUnits)
         {
+            Debug.Log(
+                "Trying to spawn runtime unit: " +
+                data.prefabId +
+                " Team: " +
+                data.teamId
+            );
+
             GameObject prefab =
                 UnitPrefabDatabase
                     .Instance
                     .Get(data.prefabId);
 
             if (prefab == null)
+            {
+                Debug.LogError(
+                    "Missing prefab for ID: " +
+                    data.prefabId
+                );
+
                 continue;
+            }
 
             SpawnUnit(
                 prefab,
@@ -236,7 +286,14 @@ public class TestScenarioSpawner : MonoBehaviour
             return;
 
         if (grid.IsOccupied(gridPosition))
+        {
+            Debug.LogWarning(
+                "Tile occupied at: " +
+                gridPosition
+            );
+
             return;
+        }
 
         GameObject spawned =
             Instantiate(
@@ -262,10 +319,22 @@ public class TestScenarioSpawner : MonoBehaviour
 
         unit.SnapToGrid(gridPosition);
 
+        grid.RegisterUnit(
+            unit,
+            gridPosition
+        );
+
         if (battleStatsTracker != null)
         {
             battleStatsTracker
                 .RegisterScenarioUnit(unit);
         }
+
+        Debug.Log(
+            "Spawned unit: " +
+            prefab.name +
+            " Team: " +
+            teamId
+        );
     }
 }
