@@ -1,6 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public enum EditorMode
 {
@@ -19,8 +24,7 @@ public class RuntimeTerrainEditor : MonoBehaviour
         public string brushName;
 
         [Header("Terrain")]
-        public TerrainType terrainType =
-            TerrainType.Plain;
+        public TerrainType terrainType = TerrainType.Plain;
 
         [Range(1, 6)]
         public int heightLevel = 1;
@@ -41,51 +45,54 @@ public class RuntimeTerrainEditor : MonoBehaviour
     [System.Serializable]
     public class TerrainSaveData
     {
-        public List<TestScenarioSpawner.TerrainPaintData>
-            terrain =
-                new List<TestScenarioSpawner.TerrainPaintData>();
+        public List<TestScenarioSpawner.TerrainPaintData> terrain =
+            new List<TestScenarioSpawner.TerrainPaintData>();
 
-        public List<TestScenarioSpawner.PlacedUnitData>
-            units =
-                new List<TestScenarioSpawner.PlacedUnitData>();
+        public List<TestScenarioSpawner.PlacedUnitData> units =
+            new List<TestScenarioSpawner.PlacedUnitData>();
     }
 
     [Header("References")]
-    [SerializeField]
-    private GridManager grid;
-
-    [SerializeField]
-    private TestScenarioSpawner scenarioSpawner;
-
-    [SerializeField]
-    private Camera cam;
+    [SerializeField] private GridManager grid;
+    [SerializeField] private TestScenarioSpawner scenarioSpawner;
+    [SerializeField] private Camera cam;
 
     [Header("Editor")]
-    [SerializeField]
-    private bool editModeEnabled = true;
-
-    [SerializeField]
-    private EditorMode editorMode =
-        EditorMode.Terrain;
+    [SerializeField] private bool editModeEnabled = true;
+    [SerializeField] private EditorMode editorMode = EditorMode.Terrain;
 
     [Header("Brushes")]
-    [SerializeField]
-    private TerrainBrush[] brushes;
+    [SerializeField] private TerrainBrush[] brushes;
+    [SerializeField] private int currentBrushIndex = 0;
 
-    [SerializeField]
-    private int currentBrushIndex = 0;
+    private bool hasUnsavedChanges;
+    private bool hasLastEditedPosition;
+    private Vector2Int lastEditedPosition;
+
+    private string SaveDirectory =>
+        Path.Combine(
+            Application.dataPath,
+            "StreamingAssets",
+            "Maps"
+        );
 
     private string SavePath =>
-        Application.persistentDataPath +
-        "/terrain.json";
+        Path.Combine(
+            SaveDirectory,
+            "terrain.json"
+        );
 
     private string BackupPath =>
-        Application.persistentDataPath +
-        "/terrain_backup.json";
+        Path.Combine(
+            SaveDirectory,
+            "terrain_backup.json"
+        );
 
-    // =========================
-    // VALIDATION
-    // =========================
+    private string TempPath =>
+        Path.Combine(
+            SaveDirectory,
+            "terrain_tmp.json"
+        );
 
     private void OnValidate()
     {
@@ -96,26 +103,9 @@ public class RuntimeTerrainEditor : MonoBehaviour
             brushes.Length > 0 &&
             currentBrushIndex >= brushes.Length)
         {
-            currentBrushIndex =
-                brushes.Length - 1;
+            currentBrushIndex = brushes.Length - 1;
         }
     }
-
-    // =========================
-    // DEBUG
-    // =========================
-
-    private void DebugLog(string message)
-    {
-        if (!ENABLE_DEBUG)
-            return;
-
-        Debug.Log(message);
-    }
-
-    // =========================
-    // UNITY
-    // =========================
 
     private void Awake()
     {
@@ -123,17 +113,27 @@ public class RuntimeTerrainEditor : MonoBehaviour
             grid = FindObjectOfType<GridManager>();
 
         if (scenarioSpawner == null)
-            scenarioSpawner =
-                FindObjectOfType<TestScenarioSpawner>();
+            scenarioSpawner = FindObjectOfType<TestScenarioSpawner>();
 
         if (cam == null)
             cam = Camera.main;
     }
 
-    // LOAD HANDLED
-    // BY TESTSCENARIOSPAWNER
-    private void Start()
+    private IEnumerator Start()
     {
+        yield return null;
+        yield return null;
+
+        bool changed = SanitizeScenarioData();
+
+        if (changed)
+        {
+            if (scenarioSpawner != null)
+                scenarioSpawner.ApplyTerrain();
+
+            MarkDirty();
+            SaveIfDirty();
+        }
     }
 
     private void Update()
@@ -141,199 +141,157 @@ public class RuntimeTerrainEditor : MonoBehaviour
         if (!editModeEnabled)
             return;
 
+        if (grid == null || scenarioSpawner == null || cam == null)
+            return;
+
         HandleBrushSelection();
+        HandleEditing();
 
-        // TERRAIN MODE
-        if (editorMode ==
-            EditorMode.Terrain)
+        if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
         {
-            if (Input.GetMouseButton(0))
-            {
-                PaintTerrain();
-            }
-
-            if (Input.GetMouseButton(1))
-            {
-                RemoveTerrain();
-            }
-        }
-
-        // UNIT MODE
-        if (editorMode ==
-            EditorMode.Units)
-        {
-            if (Input.GetMouseButton(0))
-            {
-                PlaceUnit();
-            }
-
-            if (Input.GetMouseButton(1))
-            {
-                RemoveUnit();
-            }
+            hasLastEditedPosition = false;
+            SaveIfDirty();
         }
     }
 
-    // =========================
-    // BRUSHES
-    // =========================
+    private void OnApplicationQuit()
+    {
+        SaveIfDirty();
+    }
+
+    private void OnDisable()
+    {
+        SaveIfDirty();
+    }
+
+    private void HandleEditing()
+    {
+        if (editorMode == EditorMode.Terrain)
+        {
+            if (Input.GetMouseButton(0))
+                PaintTerrain();
+
+            if (Input.GetMouseButton(1))
+                RemoveTerrain();
+
+            return;
+        }
+
+        if (editorMode == EditorMode.Units)
+        {
+            if (Input.GetMouseButtonDown(0))
+                PlaceUnit();
+
+            if (Input.GetMouseButtonDown(1))
+                RemoveUnit();
+        }
+    }
 
     private void HandleBrushSelection()
     {
         if (brushes == null)
             return;
 
-        for (int i = 0;
-             i < brushes.Length &&
-             i < 9;
-             i++)
+        for (int i = 0; i < brushes.Length && i < 9; i++)
         {
-            KeyCode key =
-                KeyCode.Alpha1 + i;
+            KeyCode key = KeyCode.Alpha1 + i;
 
             if (Input.GetKeyDown(key))
-            {
                 currentBrushIndex = i;
-            }
         }
     }
-
-    // =========================
-    // GRID
-    // =========================
 
     private Vector2Int GetMouseGridPosition()
     {
         Vector3 mouseWorld =
-            cam.ScreenToWorldPoint(
-                Input.mousePosition
-            );
+            cam.ScreenToWorldPoint(Input.mousePosition);
 
-        return grid.WorldToGrid(
-            mouseWorld
-        );
+        return grid.WorldToGrid(mouseWorld);
     }
 
-    // =========================
-    // TERRAIN
-    // =========================
-
-    private void PaintTerrain()
+    private bool ShouldSkipRepeatedEdit(Vector2Int gridPos)
     {
-        if (brushes == null ||
-            brushes.Length == 0)
-            return;
+        if (hasLastEditedPosition && lastEditedPosition == gridPos)
+            return true;
+
+        hasLastEditedPosition = true;
+        lastEditedPosition = gridPos;
+
+        return false;
+    }
+
+    private TerrainBrush GetCurrentBrush()
+    {
+        if (brushes == null || brushes.Length == 0)
+            return null;
 
         if (currentBrushIndex < 0 ||
             currentBrushIndex >= brushes.Length)
         {
             currentBrushIndex = 0;
-            return;
         }
 
-        TerrainBrush brush =
-            brushes[currentBrushIndex];
+        return brushes[currentBrushIndex];
+    }
 
-        Vector2Int gridPos =
-            GetMouseGridPosition();
+    private void PaintTerrain()
+    {
+        TerrainBrush brush = GetCurrentBrush();
+
+        if (brush == null)
+            return;
+
+        Vector2Int gridPos = GetMouseGridPosition();
 
         if (!grid.IsInside(gridPos))
             return;
+
+        if (ShouldSkipRepeatedEdit(gridPos))
+            return;
+
+        RemoveTerrainEntriesAt(gridPos);
+
+        TestScenarioSpawner.TerrainPaintData data =
+            new TestScenarioSpawner.TerrainPaintData();
+
+        data.gridPosition = gridPos;
+        data.terrainType = brush.terrainType;
+        data.heightLevel = Mathf.Clamp(brush.heightLevel, 1, 6);
+        data.spriteId = brush.spriteId;
+
+        scenarioSpawner.terrainPaints.Add(data);
 
         Sprite sprite = null;
 
         if (TerrainSpriteDatabase.Instance != null)
-        {
-            sprite =
-                TerrainSpriteDatabase.Instance.Get(
-                    brush.spriteId
-                );
-        }
+            sprite = TerrainSpriteDatabase.Instance.Get(brush.spriteId);
 
         grid.SetTileTerrain(
             gridPos,
-            brush.terrainType,
-            brush.heightLevel,
+            data.terrainType,
+            data.heightLevel,
             sprite
         );
 
-        bool found = false;
-
-        for (int i = 0;
-             i < scenarioSpawner
-                 .terrainPaints.Count;
-             i++)
-        {
-            var data =
-                scenarioSpawner
-                    .terrainPaints[i];
-
-            if (data.gridPosition ==
-                gridPos)
-            {
-                data.terrainType =
-                    brush.terrainType;
-
-                data.heightLevel =
-                    brush.heightLevel;
-
-                data.spriteId =
-                    brush.spriteId;
-
-                scenarioSpawner
-                    .terrainPaints[i] =
-                        data;
-
-                found = true;
-
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            TestScenarioSpawner
-                .TerrainPaintData data =
-                    new TestScenarioSpawner
-                        .TerrainPaintData();
-
-            data.gridPosition =
-                gridPos;
-
-            data.terrainType =
-                brush.terrainType;
-
-            data.heightLevel =
-                brush.heightLevel;
-
-            data.spriteId =
-                brush.spriteId;
-
-            scenarioSpawner
-                .terrainPaints
-                .Add(data);
-        }
-
-        SaveTerrain();
+        MarkDirty();
     }
 
     private void RemoveTerrain()
     {
-        Vector2Int gridPos =
-            GetMouseGridPosition();
+        Vector2Int gridPos = GetMouseGridPosition();
 
         if (!grid.IsInside(gridPos))
             return;
 
+        if (ShouldSkipRepeatedEdit(gridPos))
+            return;
+
+        bool removed = RemoveTerrainEntriesAt(gridPos);
+
         Sprite defaultSprite = null;
 
         if (TerrainSpriteDatabase.Instance != null)
-        {
-            defaultSprite =
-                TerrainSpriteDatabase.Instance.Get(
-                    "grass"
-                );
-        }
+            defaultSprite = TerrainSpriteDatabase.Instance.Get("grass");
 
         grid.SetTileTerrain(
             gridPos,
@@ -342,204 +300,288 @@ public class RuntimeTerrainEditor : MonoBehaviour
             defaultSprite
         );
 
-        for (int i =
-                 scenarioSpawner
-                 .terrainPaints.Count - 1;
-             i >= 0;
-             i--)
-        {
-            if (scenarioSpawner
-                .terrainPaints[i]
-                .gridPosition ==
-                gridPos)
-            {
-                scenarioSpawner
-                    .terrainPaints
-                    .RemoveAt(i);
-            }
-        }
-
-        SaveTerrain();
+        if (removed)
+            MarkDirty();
     }
-
-    // =========================
-    // UNITS
-    // =========================
 
     private void PlaceUnit()
     {
-        if (brushes == null)
-            return;
+        TerrainBrush brush = GetCurrentBrush();
 
-        if (brushes.Length == 0)
+        if (brush == null)
             return;
-
-        if (currentBrushIndex < 0 ||
-            currentBrushIndex >= brushes.Length)
-        {
-            currentBrushIndex = 0;
-            return;
-        }
-
-        TerrainBrush brush =
-            brushes[currentBrushIndex];
 
         if (brush.placeableObject == null)
             return;
 
-        Vector2Int gridPos =
-            GetMouseGridPosition();
+        if (string.IsNullOrWhiteSpace(brush.unitPrefabId))
+            return;
+
+        Vector2Int gridPos = GetMouseGridPosition();
 
         if (!grid.IsInside(gridPos))
             return;
 
-        // ONLY BLOCK SAME TEAM
-        GameUnit existing =
-            grid.GetUnitAt(gridPos);
+        if (!grid.IsWalkable(gridPos))
+            return;
 
-        if (existing != null)
-        {
-            if (existing.TeamId ==
-                brush.placedTeamId)
-            {
-                return;
-            }
-        }
-
-        Vector3 spawnPos =
-            new Vector3(
-                gridPos.x,
-                gridPos.y,
-                -0.2f
-            );
+        if (grid.GetUnitAt(gridPos) != null)
+            return;
 
         GameObject spawned =
             Instantiate(
                 brush.placeableObject,
-                spawnPos,
+                new Vector3(gridPos.x, gridPos.y, -0.2f),
                 Quaternion.identity
             );
 
-        GameUnit unit =
-            spawned.GetComponent<GameUnit>();
+        GameUnit unit = spawned.GetComponent<GameUnit>();
 
-        if (unit != null)
+        if (unit == null)
         {
-            unit.SetTeam(
-                brush.placedTeamId
-            );
-
-            unit.SnapToGrid(
-                gridPos
-            );
-
-            grid.RegisterUnit(
-                unit,
-                gridPos
-            );
+            Destroy(spawned);
+            return;
         }
 
-        TestScenarioSpawner
-            .PlacedUnitData data =
-                new TestScenarioSpawner
-                    .PlacedUnitData();
+        unit.SetTeam(brush.placedTeamId);
+        unit.SnapToGrid(gridPos);
 
-        data.prefabId =
-            brush.unitPrefabId;
+        if (grid.GetUnitAt(gridPos) != unit)
+        {
+            Destroy(spawned);
+            return;
+        }
 
-        data.gridPosition =
-            gridPos;
+        RemoveSavedUnitsAt(gridPos);
 
-        data.teamId =
-            brush.placedTeamId;
+        TestScenarioSpawner.PlacedUnitData data =
+            new TestScenarioSpawner.PlacedUnitData();
 
-        scenarioSpawner
-            .placedUnits
-            .Add(data);
+        data.prefabId = brush.unitPrefabId;
+        data.gridPosition = gridPos;
+        data.teamId = brush.placedTeamId;
 
-        SaveTerrain();
+        scenarioSpawner.placedUnits.Add(data);
+
+        MarkDirty();
+        SaveIfDirty();
     }
 
     private void RemoveUnit()
     {
-        Vector2Int gridPos =
-            GetMouseGridPosition();
+        Vector2Int gridPos = GetMouseGridPosition();
 
-        GameUnit unit =
-            grid.GetUnitAt(gridPos);
-
-        if (unit == null)
+        if (!grid.IsInside(gridPos))
             return;
 
-        grid.UnregisterUnit(
-            unit,
-            gridPos
-        );
+        GameUnit unit = grid.GetUnitAt(gridPos);
 
-        Destroy(unit.gameObject);
+        bool removedData = RemoveSavedUnitsAt(gridPos);
 
-        for (int i =
-                 scenarioSpawner
-                 .placedUnits.Count - 1;
-             i >= 0;
-             i--)
+        if (unit != null)
         {
-            if (scenarioSpawner
-                .placedUnits[i]
-                .gridPosition ==
-                gridPos)
+            grid.UnregisterUnit(unit, gridPos);
+            Destroy(unit.gameObject);
+        }
+
+        if (unit == null && !removedData)
+            return;
+
+        MarkDirty();
+        SaveIfDirty();
+    }
+
+    private bool RemoveTerrainEntriesAt(Vector2Int gridPos)
+    {
+        if (scenarioSpawner == null || scenarioSpawner.terrainPaints == null)
+            return false;
+
+        bool removed = false;
+
+        for (int i = scenarioSpawner.terrainPaints.Count - 1; i >= 0; i--)
+        {
+            if (scenarioSpawner.terrainPaints[i].gridPosition == gridPos)
             {
-                scenarioSpawner
-                    .placedUnits
-                    .RemoveAt(i);
+                scenarioSpawner.terrainPaints.RemoveAt(i);
+                removed = true;
             }
         }
 
-        SaveTerrain();
+        return removed;
     }
 
-    // =========================
-    // SAVE
-    // =========================
+    private bool RemoveSavedUnitsAt(Vector2Int gridPos)
+    {
+        if (scenarioSpawner == null || scenarioSpawner.placedUnits == null)
+            return false;
+
+        bool removed = false;
+
+        for (int i = scenarioSpawner.placedUnits.Count - 1; i >= 0; i--)
+        {
+            if (scenarioSpawner.placedUnits[i].gridPosition == gridPos)
+            {
+                scenarioSpawner.placedUnits.RemoveAt(i);
+                removed = true;
+            }
+        }
+
+        return removed;
+    }
+
+    private bool SanitizeScenarioData()
+    {
+        if (scenarioSpawner == null)
+            return false;
+
+        bool changed = false;
+
+        if (scenarioSpawner.terrainPaints == null)
+            scenarioSpawner.terrainPaints = new List<TestScenarioSpawner.TerrainPaintData>();
+
+        Dictionary<Vector2Int, TestScenarioSpawner.TerrainPaintData> terrainLookup =
+            new Dictionary<Vector2Int, TestScenarioSpawner.TerrainPaintData>();
+
+        for (int i = 0; i < scenarioSpawner.terrainPaints.Count; i++)
+        {
+            TestScenarioSpawner.TerrainPaintData data =
+                scenarioSpawner.terrainPaints[i];
+
+            if (data.heightLevel < 1 || data.heightLevel > 6)
+            {
+                changed = true;
+                continue;
+            }
+
+            if (!grid.IsInside(data.gridPosition))
+            {
+                changed = true;
+                continue;
+            }
+
+            if (terrainLookup.ContainsKey(data.gridPosition))
+                changed = true;
+
+            terrainLookup[data.gridPosition] = data;
+        }
+
+        List<TestScenarioSpawner.TerrainPaintData> cleanTerrain =
+            new List<TestScenarioSpawner.TerrainPaintData>();
+
+        foreach (KeyValuePair<Vector2Int, TestScenarioSpawner.TerrainPaintData> pair in terrainLookup)
+        {
+            cleanTerrain.Add(pair.Value);
+        }
+
+        if (cleanTerrain.Count != scenarioSpawner.terrainPaints.Count)
+            changed = true;
+
+        scenarioSpawner.terrainPaints = cleanTerrain;
+
+        if (scenarioSpawner.placedUnits == null)
+            scenarioSpawner.placedUnits = new List<TestScenarioSpawner.PlacedUnitData>();
+
+        Dictionary<Vector2Int, TestScenarioSpawner.PlacedUnitData> unitLookup =
+            new Dictionary<Vector2Int, TestScenarioSpawner.PlacedUnitData>();
+
+        for (int i = 0; i < scenarioSpawner.placedUnits.Count; i++)
+        {
+            TestScenarioSpawner.PlacedUnitData data =
+                scenarioSpawner.placedUnits[i];
+
+            if (!grid.IsInside(data.gridPosition))
+            {
+                changed = true;
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(data.prefabId))
+            {
+                changed = true;
+                continue;
+            }
+
+            if (unitLookup.ContainsKey(data.gridPosition))
+                changed = true;
+
+            unitLookup[data.gridPosition] = data;
+        }
+
+        List<TestScenarioSpawner.PlacedUnitData> cleanUnits =
+            new List<TestScenarioSpawner.PlacedUnitData>();
+
+        foreach (KeyValuePair<Vector2Int, TestScenarioSpawner.PlacedUnitData> pair in unitLookup)
+        {
+            cleanUnits.Add(pair.Value);
+        }
+
+        if (cleanUnits.Count != scenarioSpawner.placedUnits.Count)
+            changed = true;
+
+        scenarioSpawner.placedUnits = cleanUnits;
+
+        return changed;
+    }
+
+    private void MarkDirty()
+    {
+        hasUnsavedChanges = true;
+    }
+
+    private void SaveIfDirty()
+    {
+        if (!hasUnsavedChanges)
+            return;
+
+        SaveTerrain();
+        hasUnsavedChanges = false;
+    }
 
     private void SaveTerrain()
     {
         if (scenarioSpawner == null)
             return;
 
-        if (File.Exists(SavePath))
-        {
-            File.Copy(
-                SavePath,
-                BackupPath,
-                true
-            );
-        }
+        SanitizeScenarioData();
 
-        TerrainSaveData save =
-            new TerrainSaveData();
+        if (!Directory.Exists(SaveDirectory))
+            Directory.CreateDirectory(SaveDirectory);
+
+        TerrainSaveData save = new TerrainSaveData();
 
         save.terrain =
-            scenarioSpawner.terrainPaints;
-
-        save.units =
-            scenarioSpawner.placedUnits;
-
-        string json =
-            JsonUtility.ToJson(
-                save,
-                true
+            new List<TestScenarioSpawner.TerrainPaintData>(
+                scenarioSpawner.terrainPaints
             );
 
-        File.WriteAllText(
-            SavePath,
-            json
-        );
+        save.units =
+            new List<TestScenarioSpawner.PlacedUnitData>(
+                scenarioSpawner.placedUnits
+            );
+
+        string json = JsonUtility.ToJson(save, true);
+
+        if (File.Exists(SavePath))
+            File.Copy(SavePath, BackupPath, true);
+
+        File.WriteAllText(TempPath, json);
+        File.Copy(TempPath, SavePath, true);
+        File.Delete(TempPath);
+
+        DebugLog("Map saved to: " + SavePath);
+
+#if UNITY_EDITOR
+        AssetDatabase.Refresh();
+#endif
     }
 
-    // =========================
-    // GIZMOS
-    // =========================
+    private void DebugLog(string message)
+    {
+        if (!ENABLE_DEBUG)
+            return;
+
+        Debug.Log(message);
+    }
 
     private void OnDrawGizmos()
     {
@@ -550,32 +592,21 @@ public class RuntimeTerrainEditor : MonoBehaviour
             return;
 
         Vector3 mouseWorld =
-            cam.ScreenToWorldPoint(
-                Input.mousePosition
-            );
+            cam.ScreenToWorldPoint(Input.mousePosition);
 
         Vector2Int gridPos =
             new Vector2Int(
-                Mathf.RoundToInt(
-                    mouseWorld.x
-                ),
-                Mathf.RoundToInt(
-                    mouseWorld.y
-                )
+                Mathf.RoundToInt(mouseWorld.x),
+                Mathf.RoundToInt(mouseWorld.y)
             );
 
         Gizmos.color =
-            editorMode ==
-            EditorMode.Terrain
+            editorMode == EditorMode.Terrain
                 ? Color.green
                 : Color.red;
 
         Gizmos.DrawWireCube(
-            new Vector3(
-                gridPos.x,
-                gridPos.y,
-                0f
-            ),
+            new Vector3(gridPos.x, gridPos.y, 0f),
             Vector3.one
         );
     }

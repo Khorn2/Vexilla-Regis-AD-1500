@@ -1,0 +1,1292 @@
+{
+    "terrain": [
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 25
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 25
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 24
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 24
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 23
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 23
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 23
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 22
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 22
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 21
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 21
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 20
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 20
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 19
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 19
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 18
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 18
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 18
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 17
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 17
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 16
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 15
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 14
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 14
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 15
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 16
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 13
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 12
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 11
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 11
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 12
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 13
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 10
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 1
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 0
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 0
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 1
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 12
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 12,
+                "y": 13
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 14
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 10,
+                "y": 14
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 10,
+                "y": 15
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 11,
+                "y": 15
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 15
+            },
+            "terrainType": 0,
+            "heightLevel": 3,
+            "spriteId": ""
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 25,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 24,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 31,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 32,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 33,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 34,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 34,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 35,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 33,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 33,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 32,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 31,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 29,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 28,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 27,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 26,
+                "y": 26
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 26,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 27,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 27,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 28,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 28,
+                "y": 29
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 29,
+                "y": 29
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 29,
+                "y": 28
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 31,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 29,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 28,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 32,
+                "y": 27
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 26,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 22,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 17
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 24,
+                "y": 17
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 25,
+                "y": 17
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 25,
+                "y": 16
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 24,
+                "y": 16
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 16
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 18,
+                "y": 2
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 15,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 15,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 15,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 15,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 19,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 14,
+                "y": 3
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 14,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 4
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 13,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 14,
+                "y": 6
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 14,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 15,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 16,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 17,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 14,
+                "y": 5
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 20,
+                "y": 7
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 24,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 25,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 25,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 24,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 23,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 8
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 9
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 30,
+                "y": 10
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 21,
+                "y": 10
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        }
+    ],
+    "units": []
+}
