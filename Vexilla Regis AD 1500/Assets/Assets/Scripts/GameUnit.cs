@@ -766,6 +766,10 @@ public class GameUnit : MonoBehaviour
 
         currentSize = Mathf.Max(0, currentSize - safeCasualties);
 
+        BattleStatsTracker tracker = FindFirstObjectByType<BattleStatsTracker>();
+        if (tracker != null)
+            tracker.UpdateUnitCurrentSize(this);
+
         int actualLosses = previousSize - currentSize;
 
         if (actualLosses > 0)

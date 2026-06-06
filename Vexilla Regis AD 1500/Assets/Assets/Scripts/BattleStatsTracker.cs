@@ -20,31 +20,9 @@ public class BattleStatsTracker : MonoBehaviour
         public UnitRemovalReason removalReason;
         public GameUnit unitReference;
 
-        public int CurrentSize
-        {
-            get
-            {
-                if (removed)
-                    return finalSize;
-
-                if (unitReference == null)
-                    return finalSize;
-
-                return Mathf.Max(0, unitReference.CurrentSize);
-            }
-        }
-
-        public int MenLost
-        {
-            get
-            {
-                if (removalReason == UnitRemovalReason.Routed)
-                    return 0;
-
-                return Mathf.Max(0, initialSize - CurrentSize);
-            }
-        }
-
+        public int CurrentSize => Mathf.Max(0, finalSize);
+        public int MenLost => Mathf.Max(0, initialSize - finalSize);
+        public int MenRemaining => Mathf.Max(0, finalSize);
         public bool UnitLost => removalReason == UnitRemovalReason.Killed;
         public bool UnitRouted => removalReason == UnitRemovalReason.Routed;
     }
@@ -63,36 +41,99 @@ public class BattleStatsTracker : MonoBehaviour
         if (unit == null)
             return;
 
-        for (int i = 0; i < records.Count; i++)
-        {
-            if (records[i].unitReference == unit)
-                return;
-        }
+        UnitBattleRecord existing = FindRecord(unit);
+        if (existing != null)
+            return;
 
-        string unitName = unit.Stats != null ? unit.Stats.name : unit.name;
-        int initialSize = unit.Stats != null ? unit.Stats.unitSize : unit.CurrentSize;
+        string unitName = unit.Stats != null && !string.IsNullOrWhiteSpace(unit.Stats.unitName)
+            ? unit.Stats.unitName
+            : unit.name;
+
+        int initialSize = unit.Stats != null
+            ? unit.Stats.unitSize
+            : unit.CurrentSize;
 
         records.Add(new UnitBattleRecord
         {
             unitName = unitName,
             teamId = unit.TeamId,
-            initialSize = initialSize,
-            finalSize = initialSize,
+            initialSize = Mathf.Max(0, initialSize),
+            finalSize = Mathf.Max(0, unit.CurrentSize),
             removed = false,
             removalReason = UnitRemovalReason.None,
             unitReference = unit
         });
     }
 
-    public void MarkUnitKilled(GameUnit unit)
+    public void ForceFinalSync()
     {
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+
+            if (unit == null)
+                continue;
+
+            UpdateUnitCurrentSize(unit);
+        }
+
+        for (int i = 0; i < records.Count; i++)
+        {
+            UnitBattleRecord record = records[i];
+
+            if (record == null)
+                continue;
+
+            if (record.unitReference == null)
+                continue;
+
+            record.teamId = record.unitReference.TeamId;
+
+            if (!record.removed)
+                record.finalSize = Mathf.Max(0, record.unitReference.CurrentSize);
+        }
+    }
+
+    public void UpdateUnitCurrentSize(GameUnit unit)
+    {
+        if (unit == null)
+            return;
+
         UnitBattleRecord record = FindRecord(unit);
+
+        if (record == null)
+        {
+            RegisterScenarioUnit(unit);
+            record = FindRecord(unit);
+        }
+
         if (record == null)
             return;
 
-        if (record.removalReason == UnitRemovalReason.Routed)
+        if (record.removed)
             return;
 
+        record.teamId = unit.TeamId;
+        record.finalSize = Mathf.Max(0, unit.CurrentSize);
+    }
+
+    public void MarkUnitKilled(GameUnit unit)
+    {
+        if (unit == null)
+            return;
+
+        UnitBattleRecord record = FindRecord(unit);
+
+        if (record == null)
+        {
+            RegisterScenarioUnit(unit);
+            record = FindRecord(unit);
+        }
+
+        if (record == null)
+            return;
+
+        record.teamId = unit.TeamId;
         record.finalSize = 0;
         record.removed = true;
         record.removalReason = UnitRemovalReason.Killed;
@@ -100,11 +141,22 @@ public class BattleStatsTracker : MonoBehaviour
 
     public void MarkUnitRouted(GameUnit unit)
     {
+        if (unit == null)
+            return;
+
         UnitBattleRecord record = FindRecord(unit);
+
+        if (record == null)
+        {
+            RegisterScenarioUnit(unit);
+            record = FindRecord(unit);
+        }
+
         if (record == null)
             return;
 
-        record.finalSize = unit != null ? Mathf.Max(0, unit.CurrentSize) : record.finalSize;
+        record.teamId = unit.TeamId;
+        record.finalSize = Mathf.Max(0, unit.CurrentSize);
         record.removed = true;
         record.removalReason = UnitRemovalReason.Routed;
     }
@@ -125,6 +177,8 @@ public class BattleStatsTracker : MonoBehaviour
 
     public int GetTotalInitialMen(int teamId)
     {
+        ForceFinalSync();
+
         int total = 0;
 
         for (int i = 0; i < records.Count; i++)
@@ -138,6 +192,8 @@ public class BattleStatsTracker : MonoBehaviour
 
     public int GetTotalMenLost(int teamId)
     {
+        ForceFinalSync();
+
         int total = 0;
 
         for (int i = 0; i < records.Count; i++)
@@ -151,6 +207,8 @@ public class BattleStatsTracker : MonoBehaviour
 
     public int GetTotalUnits(int teamId)
     {
+        ForceFinalSync();
+
         int total = 0;
 
         for (int i = 0; i < records.Count; i++)
@@ -164,11 +222,28 @@ public class BattleStatsTracker : MonoBehaviour
 
     public int GetUnitsLost(int teamId)
     {
+        ForceFinalSync();
+
         int total = 0;
 
         for (int i = 0; i < records.Count; i++)
         {
             if (records[i].teamId == teamId && records[i].UnitLost)
+                total++;
+        }
+
+        return total;
+    }
+
+    public int GetUnitsRouted(int teamId)
+    {
+        ForceFinalSync();
+
+        int total = 0;
+
+        for (int i = 0; i < records.Count; i++)
+        {
+            if (records[i].teamId == teamId && records[i].UnitRouted)
                 total++;
         }
 
