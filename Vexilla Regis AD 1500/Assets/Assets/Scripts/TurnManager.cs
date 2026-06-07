@@ -28,6 +28,11 @@ public class TurnManager : MonoBehaviour
 
     private bool executingTurn = false;
 
+    private readonly List<GameUnit> turnStartUnits = new List<GameUnit>(128);
+    private readonly List<GameUnit> executionUnits = new List<GameUnit>(128);
+    private readonly List<GameUnit> autoMeleeUnits = new List<GameUnit>(128);
+    private readonly List<GameUnit> endTurnUnits = new List<GameUnit>(128);
+
     private void Awake()
     {
         if (enemyAI == null)
@@ -142,11 +147,12 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log($"=== EXECUTING TURN {TurnNumber} ===");
 
-        List<GameUnit> turnStartUnits = new List<GameUnit>(GameUnit.AllUnits);
+        CopyAliveUnits(turnStartUnits);
 
         for (int i = 0; i < turnStartUnits.Count; i++)
         {
             GameUnit unit = turnStartUnits[i];
+
             if (unit == null) continue;
             if (unit.IsDead) continue;
 
@@ -156,41 +162,25 @@ public class TurnManager : MonoBehaviour
         if (enemyAI != null && !IsBattleEnded)
             enemyAI.PlanEnemyTurn();
 
-        List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
+        CopyAliveUnits(executionUnits);
 
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < executionUnits.Count; i++)
         {
             if (IsBattleEnded)
                 yield break;
 
-            GameUnit unit = units[i];
+            GameUnit unit = executionUnits[i];
+
             if (unit == null) continue;
             if (unit.IsDead) continue;
 
             StartCoroutine(unit.ExecutePlannedAction());
         }
 
-        bool anyMoving = true;
-
-        while (anyMoving)
+        while (AnyUnitMoving())
         {
             if (IsBattleEnded)
                 yield break;
-
-            anyMoving = false;
-
-            for (int i = 0; i < GameUnit.AllUnits.Count; i++)
-            {
-                GameUnit unit = GameUnit.AllUnits[i];
-                if (unit == null) continue;
-                if (unit.IsDead) continue;
-
-                if (unit.IsMoving)
-                {
-                    anyMoving = true;
-                    break;
-                }
-            }
 
             yield return null;
         }
@@ -203,11 +193,12 @@ public class TurnManager : MonoBehaviour
         if (IsBattleEnded)
             yield break;
 
-        List<GameUnit> endTurnUnits = new List<GameUnit>(GameUnit.AllUnits);
+        CopyAliveUnits(endTurnUnits);
 
         for (int i = 0; i < endTurnUnits.Count; i++)
         {
             GameUnit unit = endTurnUnits[i];
+
             if (unit == null) continue;
             if (unit.IsDead) continue;
 
@@ -237,16 +228,48 @@ public class TurnManager : MonoBehaviour
         OnTurnStateChanged?.Invoke();
     }
 
+    private void CopyAliveUnits(List<GameUnit> target)
+    {
+        target.Clear();
+
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+
+            target.Add(unit);
+        }
+    }
+
+    private bool AnyUnitMoving()
+    {
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
+        {
+            GameUnit unit = GameUnit.AllUnits[i];
+
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+
+            if (unit.IsMoving)
+                return true;
+        }
+
+        return false;
+    }
+
     private void ResolveAutoMeleePhase()
     {
-        List<GameUnit> units = new List<GameUnit>(GameUnit.AllUnits);
+        CopyAliveUnits(autoMeleeUnits);
 
-        for (int i = 0; i < units.Count; i++)
+        for (int i = 0; i < autoMeleeUnits.Count; i++)
         {
             if (IsBattleEnded)
                 return;
 
-            GameUnit unit = units[i];
+            GameUnit unit = autoMeleeUnits[i];
+
             if (unit == null) continue;
             if (unit.IsDead) continue;
 

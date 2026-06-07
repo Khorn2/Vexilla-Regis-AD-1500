@@ -22,14 +22,23 @@ public class GridManager : MonoBehaviour
     private Dictionary<Vector2Int, Tile> _tiles;
     private Dictionary<Vector2Int, GameUnit> _occupied;
 
-    private readonly List<Tile> highlightedTiles = new List<Tile>();
+    private readonly List<Tile> highlightedTiles = new List<Tile>(128);
+    private readonly List<Vector2Int> lineBuffer = new List<Vector2Int>(128);
+
+    private static readonly Vector2Int[] neighbours4 =
+    {
+        new Vector2Int(1, 0),
+        new Vector2Int(-1, 0),
+        new Vector2Int(0, 1),
+        new Vector2Int(0, -1)
+    };
 
     public int Width => width;
     public int Height => height;
 
     private void Awake()
     {
-        _occupied = new Dictionary<Vector2Int, GameUnit>();
+        _occupied = new Dictionary<Vector2Int, GameUnit>(128);
     }
 
     private void Start()
@@ -40,13 +49,19 @@ public class GridManager : MonoBehaviour
     }
 
     public bool IsInside(Vector2Int p)
-        => p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
+    {
+        return p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
+    }
 
     public Vector2Int WorldToGrid(Vector3 world)
-        => new Vector2Int(Mathf.RoundToInt(world.x), Mathf.RoundToInt(world.y));
+    {
+        return new Vector2Int(Mathf.RoundToInt(world.x), Mathf.RoundToInt(world.y));
+    }
 
     public Vector3 GridToWorld(Vector2Int grid)
-        => new Vector3(grid.x, grid.y, 0f);
+    {
+        return new Vector3(grid.x, grid.y, 0f);
+    }
 
     private void GenerateGrid()
     {
@@ -89,7 +104,11 @@ public class GridManager : MonoBehaviour
 
     public Tile GetTileAtPosition(Vector2Int position)
     {
-        return _tiles.TryGetValue(position, out Tile tile) ? tile : null;
+        if (_tiles == null)
+            return null;
+
+        _tiles.TryGetValue(position, out Tile tile);
+        return tile;
     }
 
     public Tile GetTileAt(Vector2Int position)
@@ -99,11 +118,14 @@ public class GridManager : MonoBehaviour
 
     public bool IsOccupied(Vector2Int pos)
     {
-        return _occupied.ContainsKey(pos);
+        return _occupied != null && _occupied.ContainsKey(pos);
     }
 
     public GameUnit GetUnitAt(Vector2Int pos)
     {
+        if (_occupied == null)
+            return null;
+
         _occupied.TryGetValue(pos, out GameUnit unit);
         return unit;
     }
@@ -136,7 +158,7 @@ public class GridManager : MonoBehaviour
         if (_occupied.TryGetValue(to, out GameUnit existing) && existing != unit)
             return false;
 
-        if (_occupied.ContainsKey(from) && _occupied[from] == unit)
+        if (_occupied.TryGetValue(from, out GameUnit current) && current == unit)
             _occupied.Remove(from);
 
         _occupied[to] = unit;
@@ -145,9 +167,10 @@ public class GridManager : MonoBehaviour
 
     public void UnregisterUnit(GameUnit unit, Vector2Int pos)
     {
-        if (unit == null) return;
+        if (unit == null || _occupied == null)
+            return;
 
-        if (_occupied.ContainsKey(pos) && _occupied[pos] == unit)
+        if (_occupied.TryGetValue(pos, out GameUnit existing) && existing == unit)
             _occupied.Remove(pos);
     }
 
@@ -162,18 +185,34 @@ public class GridManager : MonoBehaviour
         };
     }
 
+    public Vector2Int GetNeighbour4(Vector2Int pos, int index)
+    {
+        Vector2Int offset = neighbours4[index];
+        return new Vector2Int(pos.x + offset.x, pos.y + offset.y);
+    }
+
     public List<GameUnit> GetAdjacentEnemies(GameUnit unit)
     {
-        List<GameUnit> result = new List<GameUnit>();
+        List<GameUnit> result = new List<GameUnit>(4);
+        FillAdjacentEnemies(unit, result);
+        return result;
+    }
+
+    public void FillAdjacentEnemies(GameUnit unit, List<GameUnit> result)
+    {
+        if (result == null)
+            return;
+
+        result.Clear();
 
         if (unit == null)
-            return result;
+            return;
 
-        Vector2Int[] neighbours = GetNeighbours4(unit.GridPosition);
+        Vector2Int pos = unit.GridPosition;
 
-        for (int i = 0; i < neighbours.Length; i++)
+        for (int i = 0; i < 4; i++)
         {
-            Vector2Int n = neighbours[i];
+            Vector2Int n = GetNeighbour4(pos, i);
 
             if (!IsInside(n))
                 continue;
@@ -187,8 +226,34 @@ public class GridManager : MonoBehaviour
 
             result.Add(other);
         }
+    }
 
-        return result;
+    public int CountAdjacentEnemies(GameUnit unit)
+    {
+        if (unit == null)
+            return 0;
+
+        int count = 0;
+        Vector2Int pos = unit.GridPosition;
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector2Int n = GetNeighbour4(pos, i);
+
+            if (!IsInside(n))
+                continue;
+
+            GameUnit other = GetUnitAt(n);
+
+            if (other == null) continue;
+            if (other == unit) continue;
+            if (other.IsDead) continue;
+            if (other.TeamId == unit.TeamId) continue;
+
+            count++;
+        }
+
+        return count;
     }
 
     public bool IsWalkable(Vector2Int pos)
@@ -205,17 +270,13 @@ public class GridManager : MonoBehaviour
         if (mover == null)
             return 0;
 
-        int budget = mover.GetMovementRange();
-        return Mathf.Max(0, budget);
+        return Mathf.Max(0, mover.GetMovementRange());
     }
 
     public int GetShootRangeBonusAt(Vector2Int pos)
     {
         Tile tile = GetTileAtPosition(pos);
-        if (tile == null)
-            return 0;
-
-        return tile.GetShootRangeBonus();
+        return tile != null ? tile.GetShootRangeBonus() : 0;
     }
 
     public bool IsForestAt(Vector2Int pos)
@@ -247,10 +308,7 @@ public class GridManager : MonoBehaviour
         if (tile == null)
             return 0f;
 
-        if (tile.TerrainType == TerrainType.Forest)
-            return forestArmorBonusPercent;
-
-        return 0f;
+        return tile.TerrainType == TerrainType.Forest ? forestArmorBonusPercent : 0f;
     }
 
     public bool IsAtMapEdge(Vector2Int pos)
@@ -298,56 +356,55 @@ public class GridManager : MonoBehaviour
         Vector2Int edge = GetNearestEdgePosition(current);
         Vector2Int delta = edge - current;
 
-        List<Vector2Int> candidates = new List<Vector2Int>();
-
-        if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
-        {
-            candidates.Add(new Vector2Int(current.x + (delta.x > 0 ? 1 : -1), current.y));
-
-            if (delta.y != 0)
-                candidates.Add(new Vector2Int(current.x, current.y + (delta.y > 0 ? 1 : -1)));
-
-            candidates.Add(new Vector2Int(current.x, current.y + 1));
-            candidates.Add(new Vector2Int(current.x, current.y - 1));
-        }
-        else
-        {
-            candidates.Add(new Vector2Int(current.x, current.y + (delta.y > 0 ? 1 : -1)));
-
-            if (delta.x != 0)
-                candidates.Add(new Vector2Int(current.x + (delta.x > 0 ? 1 : -1), current.y));
-
-            candidates.Add(new Vector2Int(current.x + 1, current.y));
-            candidates.Add(new Vector2Int(current.x - 1, current.y));
-        }
-
         Vector2Int best = current;
         int bestDistance = GetManhattanDistance(current, edge);
 
-        for (int i = 0; i < candidates.Count; i++)
+        TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x + GetStepSign(delta.x), current.y), edge, ref best, ref bestDistance);
+        TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x, current.y + GetStepSign(delta.y)), edge, ref best, ref bestDistance);
+
+        if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
         {
-            Vector2Int candidate = candidates[i];
-
-            if (!IsInside(candidate))
-                continue;
-
-            if (!IsWalkable(candidate))
-                continue;
-
-            GameUnit unitAt = GetUnitAt(candidate);
-            if (unitAt != null && unitAt != mover)
-                continue;
-
-            int distance = GetManhattanDistance(candidate, edge);
-
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = candidate;
-            }
+            TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x, current.y + 1), edge, ref best, ref bestDistance);
+            TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x, current.y - 1), edge, ref best, ref bestDistance);
+        }
+        else
+        {
+            TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x + 1, current.y), edge, ref best, ref bestDistance);
+            TryEvaluateRoutingCandidate(mover, new Vector2Int(current.x - 1, current.y), edge, ref best, ref bestDistance);
         }
 
         return best;
+    }
+
+    private int GetStepSign(int value)
+    {
+        if (value > 0) return 1;
+        if (value < 0) return -1;
+        return 0;
+    }
+
+    private void TryEvaluateRoutingCandidate(GameUnit mover, Vector2Int candidate, Vector2Int edge, ref Vector2Int best, ref int bestDistance)
+    {
+        if (candidate == mover.GridPosition)
+            return;
+
+        if (!IsInside(candidate))
+            return;
+
+        if (!IsWalkable(candidate))
+            return;
+
+        GameUnit unitAt = GetUnitAt(candidate);
+        if (unitAt != null && unitAt != mover)
+            return;
+
+        int distance = GetManhattanDistance(candidate, edge);
+
+        if (distance < bestDistance)
+        {
+            bestDistance = distance;
+            best = candidate;
+        }
     }
 
     public GameUnit GetNearestEnemy(GameUnit mover)
@@ -356,16 +413,18 @@ public class GridManager : MonoBehaviour
             return null;
 
         GameUnit best = null;
-        float bestDist = float.MaxValue;
+        int bestDist = int.MaxValue;
 
         for (int i = 0; i < GameUnit.AllUnits.Count; i++)
         {
             GameUnit unit = GameUnit.AllUnits[i];
+
             if (unit == null) continue;
             if (unit.IsDead) continue;
             if (unit.TeamId == mover.TeamId) continue;
 
-            float dist = Vector2Int.Distance(mover.GridPosition, unit.GridPosition);
+            int dist = GetManhattanDistance(mover.GridPosition, unit.GridPosition);
+
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -415,25 +474,28 @@ public class GridManager : MonoBehaviour
             int distance = GetManhattanDistance(unit.GridPosition, other.GridPosition);
 
             if (distance < bestDistance)
+            {
                 bestDistance = distance;
+
+                if (bestDistance <= 1)
+                    break;
+            }
         }
 
-        if (bestDistance <= maxRadius)
-            return bestDistance;
-
-        return -1;
+        return bestDistance <= maxRadius ? bestDistance : -1;
     }
 
     public bool HasAdjacentEnemyForTeam(Vector2Int pos, int teamId)
     {
-        Vector2Int[] neighbours = GetNeighbours4(pos);
-
-        for (int i = 0; i < neighbours.Length; i++)
+        for (int i = 0; i < 4; i++)
         {
-            Vector2Int n = neighbours[i];
-            if (!IsInside(n)) continue;
+            Vector2Int n = GetNeighbour4(pos, i);
+
+            if (!IsInside(n))
+                continue;
 
             GameUnit unit = GetUnitAt(n);
+
             if (unit != null && !unit.IsDead && unit.TeamId != teamId)
                 return true;
         }
@@ -519,16 +581,17 @@ public class GridManager : MonoBehaviour
         if (mover == null)
             return 0;
 
-        List<Vector2Int> line = GetLine(start, end);
-        if (line.Count <= 1)
+        BuildLine(start, end, lineBuffer);
+
+        if (lineBuffer.Count <= 1)
             return 0;
 
         int totalCost = 0;
-        Vector2Int previous = line[0];
+        Vector2Int previous = lineBuffer[0];
 
-        for (int i = 1; i < line.Count; i++)
+        for (int i = 1; i < lineBuffer.Count; i++)
         {
-            Vector2Int current = line[i];
+            Vector2Int current = lineBuffer[i];
             int stepCost = GetMovementCost(previous, current, mover);
 
             if (stepCost == int.MaxValue)
@@ -551,15 +614,15 @@ public class GridManager : MonoBehaviour
         if (!IsInside(desired))
             return from;
 
-        List<Vector2Int> line = GetLine(from, desired);
+        BuildLine(from, desired, lineBuffer);
 
         Vector2Int lastValid = from;
         Vector2Int previous = from;
         int runningCost = 0;
 
-        for (int i = 1; i < line.Count; i++)
+        for (int i = 1; i < lineBuffer.Count; i++)
         {
-            Vector2Int p = line[i];
+            Vector2Int p = lineBuffer[i];
 
             if (!IsInside(p))
                 break;
@@ -601,20 +664,19 @@ public class GridManager : MonoBehaviour
     {
         result = targetPos;
 
-        Vector2Int[] neighbours = GetNeighbours4(targetPos);
-
-        float bestDist = float.MaxValue;
+        int bestDist = int.MaxValue;
         bool found = false;
 
-        for (int i = 0; i < neighbours.Length; i++)
+        for (int i = 0; i < 4; i++)
         {
-            Vector2Int n = neighbours[i];
+            Vector2Int n = GetNeighbour4(targetPos, i);
 
             if (!IsInside(n)) continue;
             if (!IsWalkable(n)) continue;
             if (IsOccupied(n)) continue;
 
-            float dist = Vector2Int.Distance(attackerPos, n);
+            int dist = GetManhattanDistance(attackerPos, n);
+
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -631,9 +693,9 @@ public class GridManager : MonoBehaviour
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 
-    private List<Vector2Int> GetLine(Vector2Int start, Vector2Int end)
+    private void BuildLine(Vector2Int start, Vector2Int end, List<Vector2Int> result)
     {
-        List<Vector2Int> result = new List<Vector2Int>();
+        result.Clear();
 
         int x0 = start.x;
         int y0 = start.y;
@@ -667,8 +729,6 @@ public class GridManager : MonoBehaviour
                 y0 += sy;
             }
         }
-
-        return result;
     }
 
     public void SetTileTerrain(Vector2Int position, TerrainType terrainType, int heightLevel, Sprite spriteOverride = null)
@@ -684,7 +744,10 @@ public class GridManager : MonoBehaviour
     public void ClearHighlights()
     {
         for (int i = 0; i < highlightedTiles.Count; i++)
-            highlightedTiles[i].SetRangeHighlight(false);
+        {
+            if (highlightedTiles[i] != null)
+                highlightedTiles[i].SetRangeHighlight(false);
+        }
 
         highlightedTiles.Clear();
     }
@@ -697,14 +760,12 @@ public class GridManager : MonoBehaviour
         {
             for (int y = -range; y <= range; y++)
             {
+                if (Mathf.Abs(x) + Mathf.Abs(y) > range)
+                    continue;
+
                 Vector2Int p = new Vector2Int(center.x + x, center.y + y);
 
                 if (!IsInside(p))
-                    continue;
-
-                float dist = Mathf.Abs(x) + Mathf.Abs(y);
-
-                if (dist > range)
                     continue;
 
                 Tile tile = GetTileAtPosition(p);
@@ -722,18 +783,18 @@ public class GridManager : MonoBehaviour
     {
         ClearHighlights();
 
+        int rangeSqr = range * range;
+
         for (int x = -range; x <= range; x++)
         {
             for (int y = -range; y <= range; y++)
             {
+                if ((x * x) + (y * y) > rangeSqr)
+                    continue;
+
                 Vector2Int p = new Vector2Int(center.x + x, center.y + y);
 
                 if (!IsInside(p))
-                    continue;
-
-                float dist = Vector2Int.Distance(center, p);
-
-                if (dist > range)
                     continue;
 
                 Tile tile = GetTileAtPosition(p);

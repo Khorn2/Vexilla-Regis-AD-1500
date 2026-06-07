@@ -60,7 +60,10 @@ public class GameUnit : MonoBehaviour
     public bool CanReceiveOrders => !IsBroken && !IsDead;
     public bool ShowCommandPreview => teamId == 0 && !IsBroken;
 
-    private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>();
+    private readonly List<PlannedCommand> plannedCommands = new List<PlannedCommand>(8);
+    private readonly List<Vector2Int> directPathBuffer = new List<Vector2Int>(64);
+    private readonly List<Vector2Int> lineBuffer = new List<Vector2Int>(64);
+    private readonly List<GameUnit> adjacentEnemiesBuffer = new List<GameUnit>(4);
 
     private Coroutine _moveRoutine;
     private int currentSize;
@@ -72,8 +75,12 @@ public class GameUnit : MonoBehaviour
     private bool actedThisTurn;
     private bool isBeingRemoved;
     private bool reachedMapEdgeWhileRouting;
+
     private GridManager grid;
     private TurnManager turnManager;
+    private GridPathfinder pathfinder;
+    private BattleStatsTracker battleStatsTracker;
+    private BattleResultChecker battleResultChecker;
 
     private void OnEnable()
     {
@@ -84,7 +91,6 @@ public class GameUnit : MonoBehaviour
     private void OnDisable()
     {
         StopMovementSound();
-
         AllUnits.Remove(this);
     }
 
@@ -92,6 +98,11 @@ public class GameUnit : MonoBehaviour
     {
         grid = FindObjectOfType<GridManager>();
         turnManager = FindObjectOfType<TurnManager>();
+        battleStatsTracker = FindFirstObjectByType<BattleStatsTracker>();
+        battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
+
+        if (grid != null)
+            pathfinder = new GridPathfinder(grid);
 
         if (stats == null)
         {
@@ -410,23 +421,23 @@ public class GameUnit : MonoBehaviour
         if (grid == null)
             return null;
 
-        List<Vector2Int> directPath = BuildDirectLinePath(GridPosition, desiredTargetGrid);
+        BuildDirectLinePath(GridPosition, desiredTargetGrid, directPathBuffer);
 
-        if (IsPathUsable(directPath))
-            return directPath;
+        if (IsPathUsable(directPathBuffer))
+            return directPathBuffer;
 
-        GridPathfinder pathfinder = new GridPathfinder(grid);
+        if (pathfinder == null)
+            pathfinder = new GridPathfinder(grid);
+
         return pathfinder.FindPath(GridPosition, desiredTargetGrid, this);
     }
 
-    private List<Vector2Int> BuildDirectLinePath(Vector2Int start, Vector2Int end)
+    private void BuildDirectLinePath(Vector2Int start, Vector2Int end, List<Vector2Int> result)
     {
-        List<Vector2Int> line = GetLinePoints(start, end);
+        BuildLinePoints(start, end, result);
 
-        if (line.Count > 0 && line[0] == start)
-            line.RemoveAt(0);
-
-        return line;
+        if (result.Count > 0 && result[0] == start)
+            result.RemoveAt(0);
     }
 
     private bool IsPathUsable(List<Vector2Int> path)
@@ -463,16 +474,17 @@ public class GameUnit : MonoBehaviour
     {
         if (target == null) return false;
 
-        float dist = Vector2Int.Distance(GridPosition, target.GridPosition);
-        return dist <= 1.5f;
+        int dx = Mathf.Abs(GridPosition.x - target.GridPosition.x);
+        int dy = Mathf.Abs(GridPosition.y - target.GridPosition.y);
+
+        return dx + dy == 1;
     }
 
     public bool HasAdjacentEnemy()
     {
         if (grid == null) return false;
 
-        List<GameUnit> enemies = grid.GetAdjacentEnemies(this);
-        return enemies.Count > 0;
+        return grid.HasAdjacentEnemyForTeam(GridPosition, TeamId);
     }
 
     public void AttackMelee(GameUnit target)
@@ -511,9 +523,9 @@ public class GameUnit : MonoBehaviour
         if (grid == null)
             return;
 
-        List<GameUnit> enemies = grid.GetAdjacentEnemies(this);
+        grid.FillAdjacentEnemies(this, adjacentEnemiesBuffer);
 
-        if (enemies.Count == 0)
+        if (adjacentEnemiesBuffer.Count == 0)
             return;
 
         int rawTotalDamage = Mathf.RoundToInt(stats.meleeDamage * GetMeleeModifier() * stats.autoMeleeDamageMultiplier);
@@ -521,18 +533,18 @@ public class GameUnit : MonoBehaviour
         if (rawTotalDamage <= 0)
             return;
 
-        int damagePerTarget = Mathf.Max(1, Mathf.RoundToInt((float)rawTotalDamage / enemies.Count));
+        int damagePerTarget = Mathf.Max(1, Mathf.RoundToInt((float)rawTotalDamage / adjacentEnemiesBuffer.Count));
 
         actedThisTurn = true;
 
-        Debug.Log($"{name} auto melee: targets={enemies.Count}, totalRaw={rawTotalDamage}, perTargetRaw={damagePerTarget}");
+        Debug.Log($"{name} auto melee: targets={adjacentEnemiesBuffer.Count}, totalRaw={rawTotalDamage}, perTargetRaw={damagePerTarget}");
 
         if (SoundManager.Instance != null)
-            SoundManager.Instance.PlayMelee(transform.position, enemies.Count);
+            SoundManager.Instance.PlayMelee(transform.position, adjacentEnemiesBuffer.Count);
 
-        for (int i = 0; i < enemies.Count; i++)
+        for (int i = 0; i < adjacentEnemiesBuffer.Count; i++)
         {
-            GameUnit enemy = enemies[i];
+            GameUnit enemy = adjacentEnemiesBuffer[i];
 
             if (enemy == null) continue;
             if (enemy.IsDead) continue;
@@ -602,27 +614,38 @@ public class GameUnit : MonoBehaviour
         float dist = Vector2Int.Distance(GridPosition, target.GridPosition);
         if (dist > GetCurrentShootRange()) return;
 
-        List<Vector2Int> line = GetLinePoints(GridPosition, target.GridPosition);
+        BuildLinePoints(GridPosition, target.GridPosition, lineBuffer);
 
         int alliesOnLine = 0;
         GameUnit allyHit = null;
 
-        for (int i = 1; i < line.Count - 1; i++)
+        for (int i = 1; i < lineBuffer.Count - 1; i++)
         {
-            GameUnit unitOnLine = grid != null ? grid.GetUnitAt(line[i]) : null;
+            GameUnit unitOnLine = grid != null ? grid.GetUnitAt(lineBuffer[i]) : null;
             if (unitOnLine == null) continue;
 
             if (unitOnLine.TeamId == TeamId)
             {
                 alliesOnLine++;
+
                 if (allyHit == null)
                     allyHit = unitOnLine;
+            }
+            else
+            {
+                return;
             }
         }
 
         if (alliesOnLine >= 2)
         {
             Debug.Log($"{name} cannot shoot: two allies block the shot.");
+            return;
+        }
+
+        if (alliesOnLine == 1 && !allowShotThroughOneAlly)
+        {
+            Debug.Log($"{name} cannot shoot: ally blocks the shot.");
             return;
         }
 
@@ -640,12 +663,6 @@ public class GameUnit : MonoBehaviour
 
         if (alliesOnLine == 1)
         {
-            if (!allowShotThroughOneAlly)
-            {
-                Debug.Log($"{name} cannot shoot: ally blocks the shot.");
-                return;
-            }
-
             int rawTargetDmg = Mathf.RoundToInt(baseRangedDamage * targetDamageMultiplierThroughAlly);
             int rawAllyDmg = Mathf.RoundToInt(baseRangedDamage * allyDamageMultiplier);
 
@@ -766,9 +783,11 @@ public class GameUnit : MonoBehaviour
 
         currentSize = Mathf.Max(0, currentSize - safeCasualties);
 
-        BattleStatsTracker tracker = FindFirstObjectByType<BattleStatsTracker>();
-        if (tracker != null)
-            tracker.UpdateUnitCurrentSize(this);
+        if (battleStatsTracker == null)
+            battleStatsTracker = FindFirstObjectByType<BattleStatsTracker>();
+
+        if (battleStatsTracker != null)
+            battleStatsTracker.UpdateUnitCurrentSize(this);
 
         int actualLosses = previousSize - currentSize;
 
@@ -811,11 +830,7 @@ public class GameUnit : MonoBehaviour
         if (stats == null)
             return;
 
-        float cohesionModifier = 1f;
-
-        if (grid != null)
-            cohesionModifier = grid.GetMoraleCohesionModifier(this);
-
+        float cohesionModifier = grid != null ? grid.GetMoraleCohesionModifier(this) : 1f;
         int moraleLoss = Mathf.RoundToInt(finalDamage * stats.moraleDamagePerLostUnit * cohesionModifier);
 
         currentMorale = Mathf.Max(0, currentMorale - moraleLoss);
@@ -862,13 +877,15 @@ public class GameUnit : MonoBehaviour
 
         isBeingRemoved = true;
 
-        BattleStatsTracker tracker = FindFirstObjectByType<BattleStatsTracker>();
-        if (tracker != null)
+        if (battleStatsTracker == null)
+            battleStatsTracker = FindFirstObjectByType<BattleStatsTracker>();
+
+        if (battleStatsTracker != null)
         {
             if (reason == UnitRemovalReason.Routed)
-                tracker.MarkUnitRouted(this);
+                battleStatsTracker.MarkUnitRouted(this);
             else
-                tracker.MarkUnitKilled(this);
+                battleStatsTracker.MarkUnitKilled(this);
         }
 
         currentSize = 0;
@@ -885,7 +902,9 @@ public class GameUnit : MonoBehaviour
 
         AllUnits.Remove(this);
 
-        BattleResultChecker battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
+        if (battleResultChecker == null)
+            battleResultChecker = FindFirstObjectByType<BattleResultChecker>();
+
         if (battleResultChecker != null)
             battleResultChecker.CheckBattleResult();
 
@@ -968,6 +987,7 @@ public class GameUnit : MonoBehaviour
             safety++;
 
             PlannedCommand cmd = plannedCommands[0];
+
             if (cmd == null)
             {
                 plannedCommands.RemoveAt(0);
@@ -990,16 +1010,18 @@ public class GameUnit : MonoBehaviour
                     Vector2Int startPos = GridPosition;
                     OrderType orderAtMoveStart = currentOrder;
 
-                    int spentCost = 0;
-
                     Vector2Int stepTarget = grid != null
-                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out spentCost)
+                        ? grid.GetReachablePointAlongLine(this, startPos, cmd.targetGridPosition, remainingMovement, out int spentCost)
                         : cmd.targetGridPosition;
 
                     if (stepTarget == startPos)
                         yield break;
 
-                    if (spentCost == int.MaxValue)
+                    int finalSpentCost = grid != null
+                        ? grid.GetTravelCostAlongLine(this, startPos, stepTarget)
+                        : 0;
+
+                    if (finalSpentCost == int.MaxValue)
                         yield break;
 
                     bool finished = false;
@@ -1016,7 +1038,7 @@ public class GameUnit : MonoBehaviour
                         yield break;
                     }
 
-                    remainingMovement -= spentCost;
+                    remainingMovement -= finalSpentCost;
                     remainingMovement = Mathf.Max(0, remainingMovement);
 
                     if (GridPosition == cmd.targetGridPosition)
@@ -1169,9 +1191,9 @@ public class GameUnit : MonoBehaviour
         }
     }
 
-    private List<Vector2Int> GetLinePoints(Vector2Int start, Vector2Int end)
+    private void BuildLinePoints(Vector2Int start, Vector2Int end, List<Vector2Int> result)
     {
-        List<Vector2Int> result = new List<Vector2Int>();
+        result.Clear();
 
         int x0 = start.x;
         int y0 = start.y;
@@ -1205,8 +1227,6 @@ public class GameUnit : MonoBehaviour
                 y0 += sy;
             }
         }
-
-        return result;
     }
 
     private IEnumerator FollowPath(List<Vector2Int> path, Action onComplete)

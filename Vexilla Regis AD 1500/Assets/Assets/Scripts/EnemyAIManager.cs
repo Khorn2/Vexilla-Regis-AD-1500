@@ -52,6 +52,14 @@ public class EnemyAIManager : MonoBehaviour
         public ShotQuality shotQuality;
     }
 
+    private readonly List<GameUnit> enemiesBuffer = new List<GameUnit>(64);
+    private readonly List<GameUnit> playersBuffer = new List<GameUnit>(64);
+    private readonly Dictionary<Vector2Int, int> pathCostCache = new Dictionary<Vector2Int, int>(128);
+    private readonly List<Vector2Int> lineBuffer = new List<Vector2Int>(64);
+
+    private GridPathfinder pathfinder;
+    private GameUnit cachedMover;
+
     private void Awake()
     {
         if (grid == null)
@@ -59,6 +67,9 @@ public class EnemyAIManager : MonoBehaviour
 
         if (turnManager == null)
             turnManager = FindObjectOfType<TurnManager>();
+
+        if (grid != null)
+            pathfinder = new GridPathfinder(grid);
     }
 
     public void PlanEnemyTurn()
@@ -66,16 +77,24 @@ public class EnemyAIManager : MonoBehaviour
         if (turnManager != null && turnManager.IsBattleEnded)
             return;
 
-        List<GameUnit> enemies = GetEnemyUnits();
-        List<GameUnit> players = GetPlayerUnits();
+        if (grid == null)
+            return;
 
-        float armyAdvantage = EvaluateArmyAdvantage(enemies, players);
-        bool allOutAttack = ShouldCommitToAttack(enemies, players, armyAdvantage);
+        if (pathfinder == null)
+            pathfinder = new GridPathfinder(grid);
 
-        foreach (GameUnit unit in enemies)
+        GetUnitsByTeam(1, enemiesBuffer);
+        GetUnitsByTeam(0, playersBuffer);
+
+        float armyAdvantage = EvaluateArmyAdvantage(enemiesBuffer, playersBuffer);
+        bool allOutAttack = ShouldCommitToAttack(enemiesBuffer, playersBuffer, armyAdvantage);
+
+        for (int i = 0; i < enemiesBuffer.Count; i++)
         {
             if (turnManager != null && turnManager.IsBattleEnded)
                 return;
+
+            GameUnit unit = enemiesBuffer[i];
 
             if (unit == null) continue;
             if (unit.IsDead) continue;
@@ -83,37 +102,36 @@ public class EnemyAIManager : MonoBehaviour
 
             unit.ClearPlannedAction();
 
-            TacticalAction action = ChooseBestAction(unit, players, armyAdvantage, allOutAttack);
+            BeginUnitPathCache(unit);
+
+            TacticalAction action = ChooseBestAction(unit, playersBuffer, armyAdvantage, allOutAttack);
             ApplyAction(unit, action);
         }
 
         Debug.Log("Enemy AI finished tactical planning.");
     }
 
-    private List<GameUnit> GetEnemyUnits()
+    private void BeginUnitPathCache(GameUnit mover)
     {
-        List<GameUnit> result = new List<GameUnit>();
-
-        foreach (GameUnit unit in GameUnit.AllUnits)
-        {
-            if (unit != null && !unit.IsDead && !unit.IsBroken && unit.TeamId == 1)
-                result.Add(unit);
-        }
-
-        return result;
+        cachedMover = mover;
+        pathCostCache.Clear();
     }
 
-    private List<GameUnit> GetPlayerUnits()
+    private void GetUnitsByTeam(int teamId, List<GameUnit> result)
     {
-        List<GameUnit> result = new List<GameUnit>();
+        result.Clear();
 
-        foreach (GameUnit unit in GameUnit.AllUnits)
+        for (int i = 0; i < GameUnit.AllUnits.Count; i++)
         {
-            if (unit != null && !unit.IsDead && !unit.IsBroken && unit.TeamId == 0)
-                result.Add(unit);
-        }
+            GameUnit unit = GameUnit.AllUnits[i];
 
-        return result;
+            if (unit == null) continue;
+            if (unit.IsDead) continue;
+            if (unit.IsBroken) continue;
+            if (unit.TeamId != teamId) continue;
+
+            result.Add(unit);
+        }
     }
 
     private TacticalAction ChooseBestAction(GameUnit enemy, List<GameUnit> players, float armyAdvantage, bool allOutAttack)
@@ -136,15 +154,28 @@ public class EnemyAIManager : MonoBehaviour
         for (int i = 0; i < players.Count; i++)
         {
             GameUnit target = players[i];
+
             if (target == null) continue;
+            if (target.IsDead) continue;
+            if (target.IsBroken) continue;
 
-            List<TacticalAction> candidates = BuildCandidateActions(enemy, target, aggression, localThreat, allOutAttack);
+            TrySetBest(ref best, BuildHoldAction(enemy, target, aggression, localThreat));
 
-            for (int j = 0; j < candidates.Count; j++)
+            if (enemy.Stats.canShoot)
             {
-                if (candidates[j].score > best.score)
-                    best = candidates[j];
+                TrySetBest(ref best, BuildShootAction(enemy, target, aggression, localThreat));
+                TrySetBest(ref best, BuildMoveToShootingPositionAction(enemy, target, aggression, localThreat));
+                TrySetBest(ref best, BuildMoveToLinePositionAction(enemy, target, aggression, localThreat));
+                continue;
             }
+
+            if (enemy.Stats.canCharge)
+            {
+                TrySetBest(ref best, BuildChargeAction(enemy, target, aggression, localThreat, allOutAttack));
+                TrySetBest(ref best, BuildFlankAction(enemy, target, aggression, localThreat, allOutAttack));
+            }
+
+            TrySetBest(ref best, BuildMoveTowardsAction(enemy, target, aggression, localThreat, allOutAttack));
         }
 
         if (logTacticalAI)
@@ -153,39 +184,10 @@ public class EnemyAIManager : MonoBehaviour
         return best;
     }
 
-    private List<TacticalAction> BuildCandidateActions(GameUnit enemy, GameUnit target, float aggression, float localThreat, bool allOutAttack)
+    private void TrySetBest(ref TacticalAction best, TacticalAction candidate)
     {
-        List<TacticalAction> actions = new List<TacticalAction>();
-
-        actions.Add(BuildHoldAction(enemy, target, aggression, localThreat));
-
-        if (enemy.Stats.canShoot)
-        {
-            TacticalAction shoot = BuildShootAction(enemy, target, aggression, localThreat);
-            if (shoot.score > float.MinValue) actions.Add(shoot);
-
-            TacticalAction shootingMove = BuildMoveToShootingPositionAction(enemy, target, aggression, localThreat);
-            if (shootingMove.score > float.MinValue) actions.Add(shootingMove);
-
-            TacticalAction lineMove = BuildMoveToLinePositionAction(enemy, target, aggression, localThreat);
-            if (lineMove.score > float.MinValue) actions.Add(lineMove);
-
-            return actions;
-        }
-
-        if (enemy.Stats.canCharge)
-        {
-            TacticalAction charge = BuildChargeAction(enemy, target, aggression, localThreat, allOutAttack);
-            if (charge.score > float.MinValue) actions.Add(charge);
-
-            TacticalAction flank = BuildFlankAction(enemy, target, aggression, localThreat, allOutAttack);
-            if (flank.score > float.MinValue) actions.Add(flank);
-        }
-
-        TacticalAction approach = BuildMoveTowardsAction(enemy, target, aggression, localThreat, allOutAttack);
-        if (approach.score > float.MinValue) actions.Add(approach);
-
-        return actions;
+        if (candidate.score > best.score)
+            best = candidate;
     }
 
     private TacticalAction BuildHoldAction(GameUnit enemy, GameUnit target, float aggression, float localThreat)
@@ -669,6 +671,9 @@ public class EnemyAIManager : MonoBehaviour
         {
             for (int y = -moveRange; y <= moveRange; y++)
             {
+                if (Mathf.Abs(x) + Mathf.Abs(y) > moveRange)
+                    continue;
+
                 Vector2Int candidate = new Vector2Int(enemy.GridPosition.x + x, enemy.GridPosition.y + y);
 
                 if (!IsValidMoveCandidate(enemy, candidate))
@@ -721,6 +726,9 @@ public class EnemyAIManager : MonoBehaviour
         {
             for (int y = -moveRange; y <= moveRange; y++)
             {
+                if (Mathf.Abs(x) + Mathf.Abs(y) > moveRange)
+                    continue;
+
                 Vector2Int candidate = new Vector2Int(enemy.GridPosition.x + x, enemy.GridPosition.y + y);
 
                 if (!IsValidMoveCandidate(enemy, candidate))
@@ -812,14 +820,12 @@ public class EnemyAIManager : MonoBehaviour
     {
         bestTile = enemy.GridPosition;
 
-        Vector2Int[] neighbours = grid.GetNeighbours4(target.GridPosition);
-
         float bestScore = float.MaxValue;
         bool found = false;
 
-        for (int i = 0; i < neighbours.Length; i++)
+        for (int i = 0; i < 4; i++)
         {
-            Vector2Int candidate = neighbours[i];
+            Vector2Int candidate = GetNeighbourByIndex(target.GridPosition, i);
 
             if (!IsValidMoveCandidate(enemy, candidate))
                 continue;
@@ -846,6 +852,21 @@ public class EnemyAIManager : MonoBehaviour
         }
 
         return found;
+    }
+
+    private Vector2Int GetNeighbourByIndex(Vector2Int pos, int index)
+    {
+        switch (index)
+        {
+            case 0:
+                return new Vector2Int(pos.x + 1, pos.y);
+            case 1:
+                return new Vector2Int(pos.x - 1, pos.y);
+            case 2:
+                return new Vector2Int(pos.x, pos.y + 1);
+            default:
+                return new Vector2Int(pos.x, pos.y - 1);
+        }
     }
 
     private AttackDirection GetAttackDirectionFromPosition(Vector2Int attackerPosition, GameUnit defender)
@@ -913,12 +934,13 @@ public class EnemyAIManager : MonoBehaviour
         if (!CanShootTargetFromPosition(shooter, shooterPosition, target))
             return ShotQuality.Blocked;
 
-        List<Vector2Int> line = GetLinePoints(shooterPosition, target.GridPosition);
+        BuildLinePoints(shooterPosition, target.GridPosition, lineBuffer);
+
         int alliesOnLine = 0;
 
-        for (int i = 1; i < line.Count - 1; i++)
+        for (int i = 1; i < lineBuffer.Count - 1; i++)
         {
-            GameUnit unitOnLine = grid.GetUnitAt(line[i]);
+            GameUnit unitOnLine = grid.GetUnitAt(lineBuffer[i]);
 
             if (unitOnLine == null)
                 continue;
@@ -944,31 +966,24 @@ public class EnemyAIManager : MonoBehaviour
 
     private int GetPathTravelCost(GameUnit mover, Vector2Int target)
     {
+        if (mover == null || grid == null)
+            return int.MaxValue;
+
         if (target == mover.GridPosition)
             return 0;
 
-        GridPathfinder pathfinder = new GridPathfinder(grid);
-        List<Vector2Int> path = pathfinder.FindPath(mover.GridPosition, target, mover);
+        if (cachedMover != mover)
+            BeginUnitPathCache(mover);
 
-        if (path == null || path.Count == 0)
-            return int.MaxValue;
+        if (pathCostCache.TryGetValue(target, out int cachedCost))
+            return cachedCost;
 
-        int totalCost = 0;
-        Vector2Int previous = mover.GridPosition;
+        if (pathfinder == null)
+            pathfinder = new GridPathfinder(grid);
 
-        for (int i = 0; i < path.Count; i++)
-        {
-            Vector2Int current = path[i];
-            int stepCost = grid.GetMovementCost(previous, current, mover);
-
-            if (stepCost == int.MaxValue)
-                return int.MaxValue;
-
-            totalCost += stepCost;
-            previous = current;
-        }
-
-        return totalCost;
+        int cost = pathfinder.FindPathCost(mover.GridPosition, target, mover);
+        pathCostCache[target] = cost;
+        return cost;
     }
 
     private float GetShootingTerrainScore(Vector2Int position)
@@ -1008,6 +1023,9 @@ public class EnemyAIManager : MonoBehaviour
         {
             for (int y = -moveRange; y <= moveRange; y++)
             {
+                if (Mathf.Abs(x) + Mathf.Abs(y) > moveRange)
+                    continue;
+
                 Vector2Int candidate = new Vector2Int(mover.GridPosition.x + x, mover.GridPosition.y + y);
 
                 if (!IsValidMoveCandidate(mover, candidate))
@@ -1060,9 +1078,9 @@ public class EnemyAIManager : MonoBehaviour
         return score;
     }
 
-    private List<Vector2Int> GetLinePoints(Vector2Int start, Vector2Int end)
+    private void BuildLinePoints(Vector2Int start, Vector2Int end, List<Vector2Int> result)
     {
-        List<Vector2Int> result = new List<Vector2Int>();
+        result.Clear();
 
         int x0 = start.x;
         int y0 = start.y;
@@ -1096,7 +1114,5 @@ public class EnemyAIManager : MonoBehaviour
                 y0 += sy;
             }
         }
-
-        return result;
     }
 }
