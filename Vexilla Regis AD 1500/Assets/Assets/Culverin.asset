@@ -18,8 +18,8 @@ MonoBehaviour:
   stopMovementOnEnemyContact: 1
   unitSize: 50
   meleeDamage: 0
-  rangedDamage: 16
-  shootRange: 10
+  rangedDamage: 30
+  shootRange: 14
   flankMeleeDamageMultiplier: 1
   rearMeleeDamageMultiplier: 1
   flankMoralePenalty: 8

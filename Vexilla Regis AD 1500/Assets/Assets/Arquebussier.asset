@@ -16,10 +16,10 @@ MonoBehaviour:
   movementRange: 4
   moveSpeedTilesPerSec: 1.5
   stopMovementOnEnemyContact: 1
-  unitSize: 125
+  unitSize: 250
   meleeDamage: 1
-  rangedDamage: 8
-  shootRange: 5
+  rangedDamage: 24
+  shootRange: 10
   flankMeleeDamageMultiplier: 1
   rearMeleeDamageMultiplier: 1
   flankMoralePenalty: 8

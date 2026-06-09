@@ -344,24 +344,6 @@
         },
         {
             "gridPosition": {
-                "x": 58,
-                "y": 10
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 10
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 50,
                 "y": 9
             },
@@ -497,33 +479,6 @@
         },
         {
             "gridPosition": {
-                "x": 58,
-                "y": 7
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 8
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 9
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
                 "y": 5
             },
@@ -560,33 +515,6 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 8
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 7
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 5
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 58,
                 "y": 0
             },
@@ -607,15 +535,6 @@
             "gridPosition": {
                 "x": 58,
                 "y": 2
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 5
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -3125,24 +3044,6 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 12
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 12
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
                 "y": 12
             },
@@ -3334,33 +3235,6 @@
             "gridPosition": {
                 "x": 58,
                 "y": 11
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 11
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 13
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 13
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -3747,24 +3621,6 @@
         {
             "gridPosition": {
                 "x": 57,
-                "y": 6
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 6
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
                 "y": 6
             },
             "terrainType": 0,
@@ -4592,24 +4448,6 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 14
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 14
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
                 "y": 14
             },
@@ -4648,24 +4486,6 @@
             "gridPosition": {
                 "x": 53,
                 "y": 14
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 15
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 15
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -4728,33 +4548,6 @@
         {
             "gridPosition": {
                 "x": 13,
-                "y": 16
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 16
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 16
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
                 "y": 16
             },
             "terrainType": 0,
@@ -4898,15 +4691,6 @@
         },
         {
             "gridPosition": {
-                "x": 57,
-                "y": 24
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 55,
                 "y": 24
             },
@@ -4925,25 +4709,7 @@
         },
         {
             "gridPosition": {
-                "x": 58,
-                "y": 21
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
-                "y": 21
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 54,
                 "y": 21
             },
             "terrainType": 0,
@@ -4997,25 +4763,7 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 17
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 58,
-                "y": 17
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
                 "y": 17
             },
             "terrainType": 0,
@@ -5078,26 +4826,8 @@
         },
         {
             "gridPosition": {
-                "x": 57,
-                "y": 22
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 56,
                 "y": 21
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 55,
-                "y": 20
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -5123,24 +4853,6 @@
         },
         {
             "gridPosition": {
-                "x": 56,
-                "y": 19
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 20
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 59,
                 "y": 20
             },
@@ -5178,33 +4890,6 @@
         {
             "gridPosition": {
                 "x": 59,
-                "y": 18
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 18
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
-                "y": 18
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 56,
                 "y": 18
             },
             "terrainType": 0,
@@ -5224,15 +4909,6 @@
             "gridPosition": {
                 "x": 53,
                 "y": 21
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 54,
-                "y": 22
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -5402,15 +5078,6 @@
         },
         {
             "gridPosition": {
-                "x": 56,
-                "y": 27
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 53,
                 "y": 29
             },
@@ -5458,15 +5125,6 @@
             "gridPosition": {
                 "x": 54,
                 "y": 28
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
-                "y": 26
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -6195,25 +5853,7 @@
         {
             "gridPosition": {
                 "x": 55,
-                "y": 23
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 55,
                 "y": 22
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 55,
-                "y": 21
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -6223,15 +5863,6 @@
             "gridPosition": {
                 "x": 56,
                 "y": 22
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
-                "y": 23
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -6357,15 +5988,6 @@
         {
             "gridPosition": {
                 "x": 57,
-                "y": 28
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 56,
                 "y": 28
             },
             "terrainType": 0,
@@ -6509,24 +6131,6 @@
         },
         {
             "gridPosition": {
-                "x": 56,
-                "y": 30
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 31
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 55,
                 "y": 30
             },
@@ -6635,15 +6239,6 @@
         },
         {
             "gridPosition": {
-                "x": 56,
-                "y": 31
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
                 "y": 31
             },
@@ -6673,33 +6268,6 @@
             "gridPosition": {
                 "x": 59,
                 "y": 30
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 31
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 32
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 32
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -6762,15 +6330,6 @@
         {
             "gridPosition": {
                 "x": 57,
-                "y": 32
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 56,
                 "y": 32
             },
             "terrainType": 0,
@@ -6906,51 +6465,6 @@
         {
             "gridPosition": {
                 "x": 9,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 7,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 4,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 5,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 6,
                 "y": 34
             },
             "terrainType": 0,
@@ -6977,43 +6491,7 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
-                "y": 33
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 58,
-                "y": 33
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 57,
-                "y": 33
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 56,
                 "y": 33
             },
             "terrainType": 0,
@@ -7058,34 +6536,7 @@
         },
         {
             "gridPosition": {
-                "x": 59,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 58,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 57,
-                "y": 34
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 56,
                 "y": 34
             },
             "terrainType": 0,
@@ -7176,15 +6627,6 @@
         {
             "gridPosition": {
                 "x": 58,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 59,
                 "y": 36
             },
             "terrainType": 0,
@@ -8428,42 +7870,6 @@
             "gridPosition": {
                 "x": 9,
                 "y": 33
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 2,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 4,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 5,
-                "y": 35
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -11227,15 +10633,6 @@
             "gridPosition": {
                 "x": 43,
                 "y": 52
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 45,
-                "y": 39
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -12998,105 +12395,6 @@
         },
         {
             "gridPosition": {
-                "x": 0,
-                "y": 41
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 2,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 4,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 5,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 6,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 7,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 8,
-                "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 10,
                 "y": 35
             },
@@ -13153,33 +12451,6 @@
             "gridPosition": {
                 "x": 17,
                 "y": 35
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 6,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 7,
-                "y": 36
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 8,
-                "y": 36
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -13351,132 +12622,6 @@
             "gridPosition": {
                 "x": 8,
                 "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 7,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 6,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 5,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 4,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 2,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 37
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 4,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 5,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 6,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 7,
-                "y": 38
             },
             "terrainType": 0,
             "heightLevel": 1,
@@ -13646,15 +12791,6 @@
         },
         {
             "gridPosition": {
-                "x": 6,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 5,
                 "y": 39
             },
@@ -13719,33 +12855,6 @@
         {
             "gridPosition": {
                 "x": 2,
-                "y": 41
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 40
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 40
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
                 "y": 41
             },
             "terrainType": 0,
@@ -26750,15 +25859,6 @@
         },
         {
             "gridPosition": {
-                "x": 3,
-                "y": 25
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
                 "x": 1,
                 "y": 27
             },
@@ -28262,53 +27362,8 @@
         },
         {
             "gridPosition": {
-                "x": 2,
-                "y": 34
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 35
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 35
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
                 "x": 0,
                 "y": 33
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
-                "x": 0,
-                "y": 34
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 34
             },
             "terrainType": 1,
             "heightLevel": 1,
@@ -28326,15 +27381,6 @@
         {
             "gridPosition": {
                 "x": 2,
-                "y": 33
-            },
-            "terrainType": 1,
-            "heightLevel": 1,
-            "spriteId": "forest"
-        },
-        {
-            "gridPosition": {
-                "x": 3,
                 "y": 33
             },
             "terrainType": 1,
@@ -28784,33 +27830,6 @@
         },
         {
             "gridPosition": {
-                "x": 1,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 1,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
-                "x": 2,
-                "y": 38
-            },
-            "terrainType": 0,
-            "heightLevel": 1,
-            "spriteId": "Height 1"
-        },
-        {
-            "gridPosition": {
                 "x": 2,
                 "y": 39
             },
@@ -31772,24 +30791,6 @@
         },
         {
             "gridPosition": {
-                "x": 42,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 2,
-            "spriteId": "Height 2"
-        },
-        {
-            "gridPosition": {
-                "x": 43,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 2,
-            "spriteId": "Height 2"
-        },
-        {
-            "gridPosition": {
                 "x": 43,
                 "y": 42
             },
@@ -31872,24 +30873,6 @@
         {
             "gridPosition": {
                 "x": 44,
-                "y": 39
-            },
-            "terrainType": 0,
-            "heightLevel": 2,
-            "spriteId": "Height 2"
-        },
-        {
-            "gridPosition": {
-                "x": 44,
-                "y": 40
-            },
-            "terrainType": 0,
-            "heightLevel": 2,
-            "spriteId": "Height 2"
-        },
-        {
-            "gridPosition": {
-                "x": 45,
                 "y": 40
             },
             "terrainType": 0,
@@ -32372,7 +31355,2100 @@
             "terrainType": 0,
             "heightLevel": 2,
             "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 42,
+                "y": 39
+            },
+            "terrainType": 0,
+            "heightLevel": 2,
+            "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 43,
+                "y": 39
+            },
+            "terrainType": 0,
+            "heightLevel": 2,
+            "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 44,
+                "y": 39
+            },
+            "terrainType": 0,
+            "heightLevel": 2,
+            "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 45,
+                "y": 39
+            },
+            "terrainType": 0,
+            "heightLevel": 2,
+            "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 45,
+                "y": 40
+            },
+            "terrainType": 0,
+            "heightLevel": 2,
+            "spriteId": "Height 2"
+        },
+        {
+            "gridPosition": {
+                "x": 5,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 2,
+                "y": 34
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 33
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 34
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 4,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 2,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 4,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 40
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 41
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 41
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 40
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 39
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 39
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 2,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 2,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 4,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 5,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 5,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 5,
+                "y": 34
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 7,
+                "y": 34
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 8,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 8,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 7,
+                "y": 35
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 7,
+                "y": 36
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 7,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 37
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 7,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 39
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 5,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 4,
+                "y": 38
+            },
+            "terrainType": 1,
+            "heightLevel": 1,
+            "spriteId": "forest"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 36
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 2,
+                "y": 36
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 36
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 0,
+                "y": 34
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 34
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 4,
+                "y": 34
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 6,
+                "y": 34
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 1,
+                "y": 38
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 3,
+                "y": 25
+            },
+            "terrainType": 2,
+            "heightLevel": 1,
+            "spriteId": "Water"
+        },
+        {
+            "gridPosition": {
+                "x": 55,
+                "y": 23
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 54,
+                "y": 23
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 54,
+                "y": 22
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 54,
+                "y": 21
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 55,
+                "y": 21
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 55,
+                "y": 20
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 19
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 18
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 18
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 17
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 16
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 16
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 15
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 14
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 13
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 12
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 9
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 10
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 11
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 12
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 13
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 14
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 15
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 16
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 17
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 18
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 20
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 21
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 22
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 23
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 24
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 26
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 27
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 28
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 30
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 31
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 32
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 33
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 56,
+                "y": 34
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 57,
+                "y": 34
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 33
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 32
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 31
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 31
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 32
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 33
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 34
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 37
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 36
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 35
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 8
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 7
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 6
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 58,
+                "y": 5
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 5
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 6
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 7
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 8
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 9
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
+        },
+        {
+            "gridPosition": {
+                "x": 59,
+                "y": 10
+            },
+            "terrainType": 0,
+            "heightLevel": 1,
+            "spriteId": "Height 1"
         }
     ],
-    "units": []
+    "units": [
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 20,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 22,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 23,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 21,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 24,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 25,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 30,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 31,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 32,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 33,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 34,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 35,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 39,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 40,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 41,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 42,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 43,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 44,
+                "y": 31
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 31,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 34,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 40,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 43,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 24,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Culverin",
+            "gridPosition": {
+                "x": 21,
+                "y": 32
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Elite_Pikeman",
+            "gridPosition": {
+                "x": 27,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Elite_Pikeman",
+            "gridPosition": {
+                "x": 37,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 29,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 30,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 31,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 32,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 33,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 34,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 35,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 25,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 23,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 24,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 22,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 21,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 20,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 19,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 39,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 40,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 41,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 42,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 43,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 44,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Pikeman",
+            "gridPosition": {
+                "x": 45,
+                "y": 29
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 31,
+                "y": 25
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 32,
+                "y": 25
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 33,
+                "y": 25
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 34,
+                "y": 25
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Arquebussier",
+            "gridPosition": {
+                "x": 30,
+                "y": 25
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Man-at arms",
+            "gridPosition": {
+                "x": 41,
+                "y": 12
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Light Cavalery",
+            "gridPosition": {
+                "x": 23,
+                "y": 12
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Cuirassiers",
+            "gridPosition": {
+                "x": 47,
+                "y": 3
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 51,
+                "y": 1
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 52,
+                "y": 1
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 53,
+                "y": 1
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 53,
+                "y": 0
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 52,
+                "y": 0
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Spearman",
+            "gridPosition": {
+                "x": 51,
+                "y": 0
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Cuirassiers",
+            "gridPosition": {
+                "x": 57,
+                "y": 1
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Cuirassiers",
+            "gridPosition": {
+                "x": 35,
+                "y": 0
+            },
+            "teamId": 0
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 28,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 27,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 28,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 27,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 27,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 28,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 36,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 37,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 38,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 39,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 39,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 38,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 37,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 36,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 36,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 37,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 38,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 39,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 33,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 30,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 27,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 36,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 39,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Culverin",
+            "gridPosition": {
+                "x": 24,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Pikeman",
+            "gridPosition": {
+                "x": 31,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Pikeman",
+            "gridPosition": {
+                "x": 32,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Pikeman",
+            "gridPosition": {
+                "x": 33,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Pikeman",
+            "gridPosition": {
+                "x": 30,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Arquebussier",
+            "gridPosition": {
+                "x": 29,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Arquebussier",
+            "gridPosition": {
+                "x": 34,
+                "y": 50
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 36,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 37,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 38,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 39,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 27,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 25,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 26,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 24,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 34,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 35,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 29,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 28,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Light Cavalery",
+            "gridPosition": {
+                "x": 42,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Light Cavalery",
+            "gridPosition": {
+                "x": 20,
+                "y": 51
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Man-at arms",
+            "gridPosition": {
+                "x": 53,
+                "y": 6
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Man-at arms",
+            "gridPosition": {
+                "x": 52,
+                "y": 6
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Man-at arms",
+            "gridPosition": {
+                "x": 49,
+                "y": 3
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Man-at arms",
+            "gridPosition": {
+                "x": 57,
+                "y": 6
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Man-at arms",
+            "gridPosition": {
+                "x": 51,
+                "y": 6
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 12,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 10,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 11,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Spearman",
+            "gridPosition": {
+                "x": 9,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 15,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 16,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 5,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 4,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 5,
+                "y": 56
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Cuirassiers",
+            "gridPosition": {
+                "x": 4,
+                "y": 56
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Arquebussier",
+            "gridPosition": {
+                "x": 8,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy_Arquebussier",
+            "gridPosition": {
+                "x": 13,
+                "y": 55
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 29,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 29,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 29,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 26,
+                "y": 42
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 26,
+                "y": 41
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 26,
+                "y": 40
+            },
+            "teamId": 1
+        },
+        {
+            "prefabId": "Enemy Elite_Pikeman",
+            "gridPosition": {
+                "x": 30,
+                "y": 33
+            },
+            "teamId": 1
+        }
+    ]
 }

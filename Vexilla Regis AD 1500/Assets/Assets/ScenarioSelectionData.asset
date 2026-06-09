@@ -13,15 +13,16 @@ MonoBehaviour:
   m_Name: ScenarioSelectionData
   m_EditorClassIdentifier: 
   scenarioId: scenario_01
-  scenarioTitle: "Bitwa nad rzek\u0105 Garigliano"
-  historicalDescription: "Po zwyci\u0119skiej bitwie pod Cerignol\u0105, hiszpa\u0144skie
-    oddzia\u0142y pod wodz\u0105 Gonzalo Fernandeza de Cordoby ruszaj\u0105 za Francuzami
-    do San Germano. W listopadzie Hiszpanie napotykaj\u0105 op\xF3r nieprzyjaciela
-    w okolicy rzeki Garigliano. Francuzi wybudowali most, a nast\u0119pnie rozpocz\u0119li
-    atak lecz zostali zatrzymani. Walki trwa\u0142y przez nast\u0119pne miesi\u0105ce
-    a\u017C po \u015Bwi\u0119tach Bo\u017Cego Narodzenia Hiszpanie otrzymali posi\u0142ki.
-    Gonzalo przygotowa\u0142 swoich ludzi do statecznej konfrontacji, kt\xF3ra mia\u0142a
-    wydarzy\u0107 si\u0119 29 grudnia 1503 roku w walce, kt\xF3ra zostanie zapami\u0119tana
-    jako bitwa nad rzek\u0105 Garigliano."
+  scenarioTitle: "Bitwa pod Bicocc\u0105"
+  historicalDescription: "Bitwa pod Bicocc\u0105 zosta\u0142a stoczona 27 kwietnia
+    1522 roku podczas wojen w\u0142oskich. Naprzeciw siebie stan\u0119\u0142a armia
+    francusko-wenecka licz\u0105ca oko\u0142o 25\u201330 tysi\u0119cy \u017Co\u0142nierzy
+    oraz armia cesarsko-hiszpa\u0144ska licz\u0105ca oko\u0142o 18\u201322 tysi\u0105ce
+    ludzi. Starcie mia\u0142o miejsce w pobli\u017Cu Mediolanu w Lombardii. By\u0142o
+    ono cz\u0119\u015Bci\u0105 rywalizacji mi\u0119dzy Francj\u0105 a cesarzem Karolem
+    V o panowanie nad p\xF3\u0142nocnymi W\u0142ochami. W sk\u0142ad obu armii wchodzili
+    \u017Co\u0142nierze z wielu kraj\xF3w Europy, w tym Francuzi, Hiszpanie, Niemcy,
+    W\u0142osi i Szwajcarzy. Bitwa nale\u017Cy do najwa\u017Cniejszych star\u0107
+    pierwszej po\u0142owy XVI wieku.\r\n"
   scenarioImage: {fileID: 21300000, guid: 572718978d0b00b4298c0ac5a7637dc4, type: 3}
   gameplaySceneName: SampleScene

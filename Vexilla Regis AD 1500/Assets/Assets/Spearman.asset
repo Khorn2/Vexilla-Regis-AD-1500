@@ -16,7 +16,7 @@ MonoBehaviour:
   movementRange: 3
   moveSpeedTilesPerSec: 0.75
   stopMovementOnEnemyContact: 1
-  unitSize: 300
+  unitSize: 600
   meleeDamage: 6
   rangedDamage: 4
   shootRange: 4
