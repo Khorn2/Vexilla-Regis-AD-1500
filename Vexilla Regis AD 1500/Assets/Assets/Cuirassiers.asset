@@ -29,16 +29,16 @@ MonoBehaviour:
   minTilesForChargeBonus: 1
   canAutoMelee: 1
   autoMeleeDamageMultiplier: 1
-  maxMorale: 300
-  lowMoraleThreshold: 150
-  brokenMoraleThreshold: 85
+  maxMorale: 600
+  lowMoraleThreshold: 300
+  brokenMoraleThreshold: 170
   lowMoraleDamageMultiplier: 0.6
   moraleDamagePerLostUnit: 3
   passiveMoraleRecovery: 4
   idleMoraleRecoveryBonus: 6
   maxManualRetreatTurns: 2
   brokenMoraleRecoveryPerTurn: 8
-  brokenRallyChance: 0.25
+  brokenRallyChance: 0.4
   rallyMoraleGain: 35
   rallyMinimumMorale: 70
   moraleSupportRadius: 3

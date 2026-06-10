@@ -38,7 +38,7 @@ MonoBehaviour:
   idleMoraleRecoveryBonus: 6
   maxManualRetreatTurns: 1
   brokenMoraleRecoveryPerTurn: 8
-  brokenRallyChance: 0.25
+  brokenRallyChance: 0.4
   rallyMoraleGain: 20
   rallyMinimumMorale: 25
   moraleSupportRadius: 3
