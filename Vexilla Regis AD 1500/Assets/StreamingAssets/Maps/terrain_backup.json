@@ -32619,15 +32619,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Spearman",
-            "gridPosition": {
-                "x": 53,
-                "y": 0
-            },
-            "teamId": 0
-        },
-        {
-            "prefabId": "Cuirassiers",
+            "prefabId": "Cuirassier",
             "gridPosition": {
                 "x": 57,
                 "y": 1
@@ -32635,7 +32627,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Cuirassiers",
+            "prefabId": "Cuirassier",
             "gridPosition": {
                 "x": 35,
                 "y": 0
@@ -33227,7 +33219,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "4",
+            "prefabId": "Light Cavalery",
             "gridPosition": {
                 "x": 22,
                 "y": 12
@@ -33235,7 +33227,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "4",
+            "prefabId": "Light Cavalery",
             "gridPosition": {
                 "x": 21,
                 "y": 12
@@ -33419,7 +33411,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 31,
                 "y": 29
@@ -33427,7 +33419,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 32,
                 "y": 29
@@ -33435,7 +33427,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 33,
                 "y": 29

@@ -33211,7 +33211,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Cuirassier",
+            "prefabId": "Cuirassiers",
             "gridPosition": {
                 "x": 47,
                 "y": 2
@@ -33219,7 +33219,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "4",
+            "prefabId": "Light Cavalery",
             "gridPosition": {
                 "x": 22,
                 "y": 12
@@ -33227,7 +33227,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "4",
+            "prefabId": "Light Cavalery",
             "gridPosition": {
                 "x": 21,
                 "y": 12
@@ -33411,7 +33411,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 31,
                 "y": 29
@@ -33419,7 +33419,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 32,
                 "y": 29
@@ -33427,7 +33427,7 @@
             "teamId": 0
         },
         {
-            "prefabId": "Elite Pikeman",
+            "prefabId": "Elite_Pikeman",
             "gridPosition": {
                 "x": 33,
                 "y": 29
@@ -33545,6 +33545,14 @@
                 "y": 33
             },
             "teamId": 0
+        },
+        {
+            "prefabId": "Enemy_Arquebussier",
+            "gridPosition": {
+                "x": 53,
+                "y": 9
+            },
+            "teamId": 1
         }
     ]
 }
