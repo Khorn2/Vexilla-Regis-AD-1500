@@ -38,10 +38,15 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Min(0.1f)] private float rangedScanInterval = 0.25f;
     [SerializeField, Min(0.1f)] private float musketRepeatInterval = 2.5f;
     [SerializeField, Min(0.1f)] private float cannonRepeatInterval = 3f;
+    [SerializeField, Min(0f)] private float musketShotSpread = 0.35f;
+    [SerializeField, Min(0f)] private float cannonShotSpread = 0.45f;
+    [SerializeField, Range(0f, 0.2f)] private float rangedPitchVariation = 0.04f;
 
     [Header("Movement Loop")]
     [SerializeField, Min(0.05f)] private float movementScanInterval = 0.05f;
     [SerializeField, Min(0.05f)] private float movementFollowSpeed = 30f;
+    [SerializeField, Min(0.00001f)] private float movementPositionThreshold = 0.0001f;
+    [SerializeField, Min(0.01f)] private float movementStopDelay = 0.12f;
 
     [Header("Debug")]
     [SerializeField] private bool logSoundEvents = false;
@@ -51,7 +56,7 @@ public class SoundManager : MonoBehaviour
         public GameUnit shooter;
         public GameUnit target;
         public bool isCannon;
-        public float lastShotTime;
+        public float nextShotTime;
     }
 
     private class ActiveMovementSound
@@ -60,6 +65,8 @@ public class SoundManager : MonoBehaviour
         public AudioSource source;
         public GameObject audioObject;
         public float localVolume;
+        public Vector3 lastPosition;
+        public float stationaryTime;
     }
 
     private AudioSource meleeSource;
@@ -99,18 +106,20 @@ public class SoundManager : MonoBehaviour
 
     public void PlayMusketShot(Vector3 position)
     {
-        PlayOneShotAtPosition(musketShotClip, position, musketVolume, "Musket");
+        PlayOneShotAtPosition(musketShotClip, position, musketVolume, "Musket", true);
     }
 
     public void PlayCannonShot(Vector3 position)
     {
-        PlayOneShotAtPosition(cannonShotClip, position, cannonVolume, "Cannon");
+        PlayOneShotAtPosition(cannonShotClip, position, cannonVolume, "Cannon", true);
     }
 
     public void StartMovementLoopForUnit(GameUnit unit)
     {
         if (unit == null) return;
         if (unit.Stats == null) return;
+        if (unit.IsDead) return;
+        if (unit.IsBroken) return;
         if (activeMovementSounds.ContainsKey(unit)) return;
         if (!HasPendingMoveCommand(unit)) return;
 
@@ -134,19 +143,23 @@ public class SoundManager : MonoBehaviour
         source.rolloffMode = AudioRolloffMode.Linear;
         source.volume = GetFinalVolume(localVolume);
 
+        if (clip.length > 0f)
+            source.time = Random.Range(0f, clip.length);
+
         ActiveMovementSound activeSound = new ActiveMovementSound
         {
             unit = unit,
             source = source,
             audioObject = audioObject,
-            localVolume = localVolume
+            localVolume = localVolume,
+            lastPosition = unit.transform.position,
+            stationaryTime = movementStopDelay
         };
 
         activeMovementSounds[unit] = activeSound;
-        source.Play();
 
         if (logSoundEvents)
-            Debug.Log($"SoundManager: started movement loop for {unit.name}.");
+            Debug.Log($"SoundManager: created movement loop for {unit.name}.");
     }
 
     public void StopMovementLoopForUnit(GameUnit unit)
@@ -184,21 +197,20 @@ public class SoundManager : MonoBehaviour
         if (!shooter.Stats.canShoot) return;
 
         bool isCannon = shooter.Stats.isCannon;
+        float interval = isCannon ? cannonRepeatInterval : musketRepeatInterval;
+        float spread = isCannon ? cannonShotSpread : musketShotSpread;
 
         ActiveRangedSound activeSound = new ActiveRangedSound
         {
             shooter = shooter,
             target = target,
             isCannon = isCannon,
-            lastShotTime = Time.time
+            nextShotTime = Time.time + interval + Random.Range(0f, spread)
         };
 
         activeRangedSounds[shooter] = activeSound;
 
-        if (isCannon)
-            PlayCannonShot(shooter.transform.position);
-        else
-            PlayMusketShot(shooter.transform.position);
+        PlayRangedShotForUnit(shooter, isCannon);
     }
 
     public void StopRangedLoopForUnit(GameUnit shooter)
@@ -258,16 +270,34 @@ public class SoundManager : MonoBehaviour
                 continue;
             }
 
+            Vector3 currentPosition = activeSound.unit.transform.position;
+            float movedDistance = Vector3.Distance(currentPosition, activeSound.lastPosition);
+            bool isActuallyMoving = movedDistance >= movementPositionThreshold;
+
             activeSound.audioObject.transform.position = Vector3.Lerp(
                 activeSound.audioObject.transform.position,
-                activeSound.unit.transform.position,
+                currentPosition,
                 Time.deltaTime * movementFollowSpeed
             );
 
             activeSound.source.volume = GetFinalVolume(activeSound.localVolume);
 
-            if (!activeSound.source.isPlaying)
-                activeSound.source.Play();
+            if (isActuallyMoving)
+            {
+                activeSound.stationaryTime = 0f;
+
+                if (!activeSound.source.isPlaying)
+                    activeSound.source.Play();
+            }
+            else
+            {
+                activeSound.stationaryTime += Time.deltaTime;
+
+                if (activeSound.stationaryTime >= movementStopDelay && activeSound.source.isPlaying)
+                    activeSound.source.Pause();
+            }
+
+            activeSound.lastPosition = currentPosition;
         }
 
         if (unitsToRemove == null)
@@ -431,17 +461,15 @@ public class SoundManager : MonoBehaviour
                 continue;
             }
 
-            float interval = activeSound.isCannon ? cannonRepeatInterval : musketRepeatInterval;
-
-            if (Time.time < activeSound.lastShotTime + interval)
+            if (Time.time < activeSound.nextShotTime)
                 continue;
 
-            activeSound.lastShotTime = Time.time;
+            PlayRangedShotForUnit(activeSound.shooter, activeSound.isCannon);
 
-            if (activeSound.isCannon)
-                PlayCannonShot(activeSound.shooter.transform.position);
-            else
-                PlayMusketShot(activeSound.shooter.transform.position);
+            float interval = activeSound.isCannon ? cannonRepeatInterval : musketRepeatInterval;
+            float spread = activeSound.isCannon ? cannonShotSpread : musketShotSpread;
+
+            activeSound.nextShotTime = Time.time + interval + Random.Range(0f, spread);
         }
 
         if (unitsToRemove == null)
@@ -449,6 +477,17 @@ public class SoundManager : MonoBehaviour
 
         for (int i = 0; i < unitsToRemove.Count; i++)
             activeRangedSounds.Remove(unitsToRemove[i]);
+    }
+
+    private void PlayRangedShotForUnit(GameUnit shooter, bool isCannon)
+    {
+        if (shooter == null)
+            return;
+
+        if (isCannon)
+            PlayOneShotAtPosition(cannonShotClip, shooter.transform.position, cannonVolume, $"Cannon_{shooter.name}", true);
+        else
+            PlayOneShotAtPosition(musketShotClip, shooter.transform.position, musketVolume, $"Musket_{shooter.name}", true);
     }
 
     private bool IsRangedSoundStillValid(ActiveRangedSound activeSound)
@@ -547,7 +586,7 @@ public class SoundManager : MonoBehaviour
         meleeSource.volume = 0f;
     }
 
-    private void PlayOneShotAtPosition(AudioClip clip, Vector3 position, float localVolume, string soundName)
+    private void PlayOneShotAtPosition(AudioClip clip, Vector3 position, float localVolume, string soundName, bool randomizePitch)
     {
         if (clip == null)
         {
@@ -562,8 +601,9 @@ public class SoundManager : MonoBehaviour
         if (finalVolume <= 0.001f)
             return;
 
-        GameObject audioObject = new GameObject($"SFX_{clip.name}");
+        GameObject audioObject = new GameObject($"SFX_{soundName}");
         audioObject.transform.position = position;
+        audioObject.transform.SetParent(transform);
 
         AudioSource source = audioObject.AddComponent<AudioSource>();
         source.clip = clip;
@@ -575,12 +615,17 @@ public class SoundManager : MonoBehaviour
         source.playOnAwake = false;
         source.loop = false;
 
+        if (randomizePitch && rangedPitchVariation > 0f)
+            source.pitch = Random.Range(1f - rangedPitchVariation, 1f + rangedPitchVariation);
+        else
+            source.pitch = 1f;
+
         source.Play();
 
         if (logSoundEvents)
             Debug.Log($"SoundManager: played {soundName}.");
 
-        Destroy(audioObject, clip.length + 0.25f);
+        Destroy(audioObject, (clip.length / Mathf.Max(0.01f, source.pitch)) + 0.25f);
     }
 
     private float GetFinalVolume(float localVolume)
