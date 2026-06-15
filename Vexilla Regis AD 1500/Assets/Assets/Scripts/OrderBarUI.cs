@@ -32,7 +32,9 @@ public class OrderBarUI : MonoBehaviour
 
     [Header("Visual Settings")]
     [SerializeField] private Color normalIconColor = Color.white;
+    [SerializeField] private Color selectedOrderColor = Color.yellow;
     [SerializeField] private Color disabledIconColor = new Color(1f, 1f, 1f, 0.25f);
+    [SerializeField, Range(0f, 1f)] private float disabledSelectedAlpha = 0.35f;
     [SerializeField] private bool hideOrderIconsWhenNoSelection = true;
 
     private void Awake()
@@ -51,16 +53,16 @@ public class OrderBarUI : MonoBehaviour
     private void OnEnable()
     {
         if (marchButton != null)
-            marchButton.onClick.AddListener(() => ApplyOrder(OrderType.March));
+            marchButton.onClick.AddListener(OnMarchClicked);
 
         if (chargeButton != null)
-            chargeButton.onClick.AddListener(() => ApplyOrder(OrderType.Charge));
+            chargeButton.onClick.AddListener(OnChargeClicked);
 
         if (shootButton != null)
-            shootButton.onClick.AddListener(() => ApplyOrder(OrderType.Shoot));
+            shootButton.onClick.AddListener(OnShootClicked);
 
         if (retreatButton != null)
-            retreatButton.onClick.AddListener(() => ApplyOrder(OrderType.Retreat));
+            retreatButton.onClick.AddListener(OnRetreatClicked);
 
         if (endTurnButton != null)
             endTurnButton.onClick.AddListener(OnEndTurnClicked);
@@ -72,16 +74,16 @@ public class OrderBarUI : MonoBehaviour
     private void OnDisable()
     {
         if (marchButton != null)
-            marchButton.onClick.RemoveAllListeners();
+            marchButton.onClick.RemoveListener(OnMarchClicked);
 
         if (chargeButton != null)
-            chargeButton.onClick.RemoveAllListeners();
+            chargeButton.onClick.RemoveListener(OnChargeClicked);
 
         if (shootButton != null)
-            shootButton.onClick.RemoveAllListeners();
+            shootButton.onClick.RemoveListener(OnShootClicked);
 
         if (retreatButton != null)
-            retreatButton.onClick.RemoveAllListeners();
+            retreatButton.onClick.RemoveListener(OnRetreatClicked);
 
         if (endTurnButton != null)
             endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
@@ -98,6 +100,26 @@ public class OrderBarUI : MonoBehaviour
     private void Update()
     {
         Refresh();
+    }
+
+    private void OnMarchClicked()
+    {
+        ApplyOrder(OrderType.March);
+    }
+
+    private void OnChargeClicked()
+    {
+        ApplyOrder(OrderType.Charge);
+    }
+
+    private void OnShootClicked()
+    {
+        ApplyOrder(OrderType.Shoot);
+    }
+
+    private void OnRetreatClicked()
+    {
+        ApplyOrder(OrderType.Retreat);
     }
 
     private void ApplyOrder(OrderType order)
@@ -155,7 +177,14 @@ public class OrderBarUI : MonoBehaviour
         }
 
         image.enabled = true;
-        image.color = canUse ? normalIconColor : disabledIconColor;
+
+        GameUnit selectedUnit = selectionManager != null ? selectionManager.Selected : null;
+        bool isSelectedOrder = selectedUnit != null && selectedUnit.CurrentOrder == order;
+
+        if (isSelectedOrder)
+            image.color = canUse ? selectedOrderColor : WithAlpha(selectedOrderColor, disabledSelectedAlpha);
+        else
+            image.color = canUse ? normalIconColor : disabledIconColor;
     }
 
     private void RefreshEndTurn(bool enabled)
@@ -169,6 +198,12 @@ public class OrderBarUI : MonoBehaviour
         endTurnButtonImage.enabled = true;
         endTurnButtonImage.preserveAspect = true;
         endTurnButtonImage.color = enabled ? normalIconColor : disabledIconColor;
+    }
+
+    private Color WithAlpha(Color color, float alpha)
+    {
+        color.a = alpha;
+        return color;
     }
 
     private void AutoAssignImages()
