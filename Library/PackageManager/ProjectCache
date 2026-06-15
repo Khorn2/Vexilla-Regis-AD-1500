@@ -5,7 +5,7 @@ m_ProjectFiles:
     m_ContentTrackingEnabled: 1
     m_ModificationDate:
       serializedVersion: 2
-      ticks: 639162638778073174
+      ticks: 639168696065370873
     m_Hash: 947626093
   m_LockFileStatus:
     m_FilePath: E:/Github/Vexilla-Regis-AD-1500/Packages/packages-lock.json
@@ -13,7 +13,7 @@ m_ProjectFiles:
     m_ContentTrackingEnabled: 1
     m_ModificationDate:
       serializedVersion: 2
-      ticks: 639162638778088076
+      ticks: 639168696065380866
     m_Hash: 28772972
 m_EmbeddedPackageManifests:
   m_ManifestsStatus: {}
