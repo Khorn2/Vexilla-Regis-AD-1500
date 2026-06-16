@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1680
     height: 959
   m_ShowMode: 4
-  m_Title: Inspector
+  m_Title: Project
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -416,21 +416,21 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 2021fbffa021fbff1c24fbff6224fbff5a2cfbffda2cfbff562ffbff9c2ffbff2438fbffa438fbff3c3bfbff823bfbff3044fbffb244fbff2e47fbff7447fbff2e4efbffb04efbff4851fbff8e51fbff3255fbff2057fbff8462fbff3668fbffc268fbff4e6bfbff7e6bfbffc885fbff5086fbffdc88fbff0c89fbfff4ccfbff9cd2fbff1ed3fbff8ed5fbffbed5fbff44e0fbffc4e0fbff34e3fbff64e3fbfff4fafbff74fbfbffe4fdfbff14fefbff0c06fcff8c06fcff0809fcff4e09fcff7811fcfff811fcff8414fcffb414fcffd02efeff742ffeff1031feff02fa000024fa0000aa0f0100cc0f0100661a0100881a0100763a0100e63a0100084501009c450100de570100225801004e580100ee770100fe770100cc820100
+      m_ExpandedIDs: 56dbfafffedbfaff8adefaffbadefaff9cfbfaff0c07fcff70f0fcffdef7fcff76f8fcffba0cfdff3a0dfdffc60ffdfff60ffdffb823fdff522ffeffc030feff2a020100ce0e0100de0e0100601301004e16010078170100581d0100c81d01007e240100ae240100
       m_RenameOverlay:
         m_UserAcceptedRename: 0
-        m_Name: 
-        m_OriginalName: 
+        m_Name: TerrainSpriteDatabase
+        m_OriginalName: TerrainSpriteDatabase
         m_EditFieldRect:
           serializedVersion: 2
           x: 0
           y: 0
           width: 0
           height: 0
-        m_UserData: 0
+        m_UserData: 69448
         m_IsWaitingForDelay: 0
         m_IsRenaming: 0
-        m_OriginalEventType: 11
+        m_OriginalEventType: 0
         m_IsRenamingFilename: 0
         m_ClientGUIView: {fileID: 8}
       m_SearchString: 
@@ -959,7 +959,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Assets/Scripts
+    - Assets/Assets/Prefabs
     m_Globs: []
     m_OriginalText: 
     m_ImportLogFlags: 0
@@ -967,16 +967,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Assets/Scripts
+  - Assets/Assets/Prefabs
   m_LastFoldersGridSize: -1
   m_LastProjectPath: E:\Github\Vexilla-Regis-AD-1500\Vexilla Regis AD 1500
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
     scrollPos: {x: 0, y: 6}
-    m_SelectedIDs: 82070000
-    m_LastClickedID: 1922
-    m_ExpandedIDs: 000000000a0600005a0600009e060000b207000000ca9a3bffffff7f
+    m_SelectedIDs: 4e070000
+    m_LastClickedID: 1870
+    m_ExpandedIDs: 000000000a0600005a06000000ca9a3bffffff7f
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1032,7 +1032,7 @@ MonoBehaviour:
     m_SelectedInstanceIDs: 
     m_LastClickedInstanceID: 0
     m_HadKeyboardFocusLastEvent: 1
-    m_ExpandedInstanceIDs: c6230000986f0000c27300007a790000d8720000e8720000dc72000078c6000020760000bcc6000080eb000000000000563b0100
+    m_ExpandedInstanceIDs: c6230000986f0000c27300007a790000d8720000e8720000dc72000078c6000020760000bcc6000080eb0000563b010000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1056,7 +1056,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 0}
+    m_ScrollPosition: {x: 0, y: 230}
     m_GridSize: 64
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 205
